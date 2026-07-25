@@ -16,7 +16,13 @@ import csv
 import pdfplumber
 import pytesseract
 from PIL import Image
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from sqlalchemy.orm import Session
+import models
+import database
+from database import engine
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="LeakRadar API")
 
@@ -26,6 +32,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def startup_event():
+    db = database.SessionLocal()
+    try:
+        demo_user = db.query(models.User).filter(models.User.email == "rahul.sharma@example.com").first()
+        if not demo_user:
+            demo_user = models.User(name="Rahul Sharma", email="rahul.sharma@example.com")
+            db.add(demo_user)
+            db.commit()
+    finally:
+        db.close()
 
 
 class AnalyzeRequest(BaseModel):
@@ -44,46 +63,91 @@ def extract(payload: AnalyzeRequest):
     transactions = extract_transactions(payload.raw_text, payload.source_type)
     return {"transactions": transactions}
 
+def save_subscriptions_to_db(db: Session, scored_subscriptions: list):
+    """Clears existing subscriptions for demo user (ID=1) and saves new ones."""
+    # Assuming user 1 is the demo user
+    demo_user_id = 1
+    db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).delete()
+    
+    saved_subs = []
+    for s in scored_subscriptions:
+        sub_record = models.Subscription(
+            user_id=demo_user_id,
+            service_name=s.get("merchant", "Unknown"),
+            amount=s.get("monthly_equivalent_amount", 0.0),
+            frequency=s.get("billing_frequency", "Unknown"),
+            status="Active" if not s.get("is_inactive") else "Canceled",
+            action_plan="Keep",
+            leak_score=s.get("leak_score", 0),
+            is_price_hike=s.get("price_hike_pct", 0) > 0,
+            raw_data=s
+        )
+        db.add(sub_record)
+        saved_subs.append(sub_record)
+    
+    db.commit()
+    
+    # Return merged dicts with the new DB ID included
+    return [{**record.raw_data, "id": record.id} for record in saved_subs]
 
-@app.post("/api/analyze")
-def analyze(payload: AnalyzeRequest):
-    """Raw unstructured text -> scored subscriptions, end to end."""
-    transactions = extract_transactions(payload.raw_text, payload.source_type)
-    subscriptions = detect_subscriptions(transactions)
-    scored = score_subscriptions(subscriptions)
-
-    total_monthly_spend = sum(s.get("monthly_equivalent_amount", 0) for s in scored if s.get("is_recurring"))
-    potential_savings = sum(s.get("monthly_equivalent_amount", 0) for s in scored if s.get("leak_score", 0) > 40)
-    recurring_count = sum(1 for s in scored if s.get("is_recurring"))
-    annual_count = sum(1 for s in scored if s.get("billing_frequency") == "Annual")
+def calculate_stats(scored):
+    """Calculates dashboard statistics excluding resolved/inactive subscriptions."""
+    # Only count active subscriptions for spend and counts
+    active_recurring = [s for s in scored if s.get("is_recurring") and not s.get("is_inactive")]
+    
+    total_monthly_spend = sum(s.get("monthly_equivalent_amount", 0) for s in active_recurring)
+    # Potential savings are active high-leak ones
+    potential_savings = sum(s.get("monthly_equivalent_amount", 0) for s in active_recurring if s.get("leak_score", 0) > 40)
+    
+    # Realized savings are from inactive/resolved subscriptions
+    realized_savings = sum(s.get("monthly_equivalent_amount", 0) for s in scored if s.get("is_inactive"))
+    
+    recurring_count = len(active_recurring)
+    annual_count = sum(1 for s in active_recurring if s.get("billing_frequency") == "Annual")
     average_monthly_cost = round(total_monthly_spend / recurring_count, 2) if recurring_count > 0 else 0
     
-    highest_monthly_expense = max([s.get("monthly_equivalent_amount", 0) for s in scored if s.get("is_recurring")] or [0])
-    highest_leak_score = max([s.get("leak_score", 0) for s in scored] or [0])
-    overall_leak_score = int(sum(s.get("leak_score", 0) for s in scored) / len(scored)) if scored else 0
-
-    upcoming_renewals = [s for s in scored if s.get("renewal_date")]
+    highest_monthly_expense = max([s.get("monthly_equivalent_amount", 0) for s in active_recurring] or [0])
+    
+    # Leak score is only based on active subscriptions
+    active_all = [s for s in scored if not s.get("is_inactive")]
+    highest_leak_score = max([s.get("leak_score", 0) for s in active_all] or [0])
+    overall_leak_score = int(sum(s.get("leak_score", 0) for s in active_all) / len(active_all)) if active_all else 0
+    
+    upcoming_renewals = [s for s in active_all if s.get("renewal_date")]
     upcoming_renewals = sorted(upcoming_renewals, key=lambda x: x["renewal_date"])[:3]
 
     return {
+        "total_monthly_spend": round(total_monthly_spend, 2),
+        "potential_savings": round(potential_savings, 2),
+        "realized_savings": round(realized_savings, 2),
+        "recurring_count": recurring_count,
+        "annual_count": annual_count,
+        "average_monthly_cost": average_monthly_cost,
+        "highest_monthly_expense": highest_monthly_expense,
+        "highest_leak_score": highest_leak_score,
+        "overall_leak_score": overall_leak_score,
+        "upcoming_renewals": upcoming_renewals,
+    }
+
+
+@app.post("/api/analyze")
+def analyze(payload: AnalyzeRequest, db: Session = Depends(database.get_db)):
+    """Raw unstructured text -> scored subscriptions, saved to DB."""
+    transactions = extract_transactions(payload.raw_text, payload.source_type)
+    subscriptions = detect_subscriptions(transactions)
+    scored = score_subscriptions(subscriptions)
+    
+    saved_scored = save_subscriptions_to_db(db, scored)
+
+    return {
         "transactions": transactions,
-        "subscriptions": scored,
-        "stats": {
-            "total_monthly_spend": round(total_monthly_spend, 2),
-            "potential_savings": round(potential_savings, 2),
-            "recurring_count": recurring_count,
-            "annual_count": annual_count,
-            "average_monthly_cost": average_monthly_cost,
-            "highest_monthly_expense": highest_monthly_expense,
-            "highest_leak_score": highest_leak_score,
-            "overall_leak_score": overall_leak_score,
-            "upcoming_renewals": upcoming_renewals,
-        }
+        "subscriptions": saved_scored,
+        "stats": calculate_stats(saved_scored)
     }
 
 
 @app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
     """Handles file uploads (PDF, Image, CSV), extracts text via OCR/parsing, and scores."""
     content = await file.read()
     raw_text = ""
@@ -111,7 +175,7 @@ async def upload_file(file: UploadFile = File(...)):
             raw_text = content.decode('utf-8')
             
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Could not extract text from file. Try pasting raw text instead.")
+        raise HTTPException(status_code=400, detail=f"Extraction failed: {str(e)}")
         
     if not raw_text.strip():
         raise HTTPException(status_code=400, detail="Could not extract text from file. Try pasting raw text instead.")
@@ -121,71 +185,198 @@ async def upload_file(file: UploadFile = File(...)):
         transactions = extract_transactions(raw_text, "bank_statement")
         subscriptions = detect_subscriptions(transactions)
         scored = score_subscriptions(subscriptions)
-
-        total_monthly_spend = sum(s.get("monthly_equivalent_amount", 0) for s in scored if s.get("is_recurring"))
-        potential_savings = sum(s.get("monthly_equivalent_amount", 0) for s in scored if s.get("leak_score", 0) > 40)
-        recurring_count = sum(1 for s in scored if s.get("is_recurring"))
-        annual_count = sum(1 for s in scored if s.get("billing_frequency") == "Annual")
-        average_monthly_cost = round(total_monthly_spend / recurring_count, 2) if recurring_count > 0 else 0
         
-        highest_monthly_expense = max([s.get("monthly_equivalent_amount", 0) for s in scored if s.get("is_recurring")] or [0])
-        highest_leak_score = max([s.get("leak_score", 0) for s in scored] or [0])
-        overall_leak_score = int(sum(s.get("leak_score", 0) for s in scored) / len(scored)) if scored else 0
-
-        upcoming_renewals = [s for s in scored if s.get("renewal_date")]
-        upcoming_renewals = sorted(upcoming_renewals, key=lambda x: x["renewal_date"])[:3]
+        saved_scored = save_subscriptions_to_db(db, scored)
 
         return {
             "transactions": transactions,
-            "subscriptions": scored,
-            "stats": {
-                "total_monthly_spend": round(total_monthly_spend, 2),
-                "potential_savings": round(potential_savings, 2),
-                "recurring_count": recurring_count,
-                "annual_count": annual_count,
-                "average_monthly_cost": average_monthly_cost,
-                "highest_monthly_expense": highest_monthly_expense,
-                "highest_leak_score": highest_leak_score,
-                "overall_leak_score": overall_leak_score,
-                "upcoming_renewals": upcoming_renewals,
-            }
+            "subscriptions": saved_scored,
+            "stats": calculate_stats(saved_scored)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
 
 
-@app.post("/api/rescore")
-def rescore(payload: RescoreRequest):
-    """Re-run scoring after the user toggles 'still using this?' in the UI."""
-    inactive_map = {m: True for m in payload.inactive_merchants}
-    scored = score_subscriptions(payload.subscriptions, inactive_map)
-
-    total_monthly_spend = sum(s.get("monthly_equivalent_amount", 0) for s in scored if s.get("is_recurring"))
-    potential_savings = sum(s.get("monthly_equivalent_amount", 0) for s in scored if s.get("leak_score", 0) > 40)
-    recurring_count = sum(1 for s in scored if s.get("is_recurring"))
-    annual_count = sum(1 for s in scored if s.get("billing_frequency") == "Annual")
-    average_monthly_cost = round(total_monthly_spend / recurring_count, 2) if recurring_count > 0 else 0
-    highest_monthly_expense = max([s.get("monthly_equivalent_amount", 0) for s in scored if s.get("is_recurring")] or [0])
-    highest_leak_score = max([s.get("leak_score", 0) for s in scored] or [0])
-    overall_leak_score = int(sum(s.get("leak_score", 0) for s in scored) / len(scored)) if scored else 0
+@app.get("/api/subscriptions")
+def get_subscriptions(db: Session = Depends(database.get_db)):
+    """Fetch persistent state for demo user."""
+    demo_user_id = 1
+    db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
     
-    upcoming_renewals = [s for s in scored if s.get("renewal_date")]
-    upcoming_renewals = sorted(upcoming_renewals, key=lambda x: x["renewal_date"])[:3]
-
+    scored = [{**record.raw_data, "id": record.id, "is_inactive": record.status != "Active"} for record in db_subs]
+    
     return {
         "subscriptions": scored,
-        "stats": {
-            "total_monthly_spend": round(total_monthly_spend, 2),
-            "potential_savings": round(potential_savings, 2),
-            "recurring_count": recurring_count,
-            "annual_count": annual_count,
-            "average_monthly_cost": average_monthly_cost,
-            "highest_monthly_expense": highest_monthly_expense,
-            "highest_leak_score": highest_leak_score,
-            "overall_leak_score": overall_leak_score,
-            "upcoming_renewals": upcoming_renewals,
-        }
+        "stats": calculate_stats(scored)
     }
+
+
+class SubscriptionUpdate(BaseModel):
+    action: str  # "Cancel", "Downgrade", "Keep"
+
+@app.patch("/api/subscriptions/{sub_id}")
+def update_subscription(sub_id: int, payload: SubscriptionUpdate, db: Session = Depends(database.get_db)):
+    """Updates action plan & status, re-scores, returns updated stats."""
+    sub_record = db.query(models.Subscription).filter(models.Subscription.id == sub_id).first()
+    if not sub_record:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+
+    is_inactive = (payload.action == "Cancel")
+    
+    # Update relational columns
+    sub_record.action_plan = payload.action
+    sub_record.status = "Canceled" if is_inactive else "Active"
+    
+    # Update JSON payload to reflect the toggle so frontend stays consistent
+    raw_data = dict(sub_record.raw_data)
+    
+    # Run the scoring again just for this sub, passing the inactive status manually
+    # Or just adjust the properties manually to save full rescore logic complexity
+    if is_inactive:
+        raw_data["is_inactive"] = True
+        raw_data["leak_score"] = 0
+        raw_data["recommendation"] = "Resolved"
+        raw_data["recommendation_reason"] = f"You marked {sub_record.service_name} as resolved/cancelled. This leak is sealed!"
+    else:
+        raw_data["is_inactive"] = False
+        # To get the real score back, we could either re-run score_subscriptions on [raw_data] with inactive_map={} 
+        # but let's just let score_subscriptions do it correctly:
+        rescored_list = score_subscriptions([raw_data], inactive_map={sub_record.service_name: False})
+        raw_data = rescored_list[0]
+        
+    sub_record.raw_data = raw_data
+    sub_record.leak_score = raw_data.get("leak_score", 0)
+    db.commit()
+
+    # Recalculate global stats for return
+    demo_user_id = 1
+    db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
+    all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status == "Canceled"} for r in db_subs]
+
+    return {
+        "subscriptions": all_scored,
+        "stats": calculate_stats(all_scored)
+    }
+
+
+@app.get("/api/subscriptions/{sub_id}/draft-cancellation")
+def get_draft_cancellation(sub_id: int, db: Session = Depends(database.get_db)):
+    """Drafts a cancellation email for a given subscription via Groq."""
+    sub_record = db.query(models.Subscription).filter(models.Subscription.id == sub_id).first()
+    if not sub_record:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+        
+    from utils import draft_cancellation_email
+    try:
+        draft = draft_cancellation_email(
+            service_name=sub_record.service_name,
+            amount=sub_record.amount,
+            frequency=sub_record.frequency
+        )
+        return draft
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to draft email: {str(e)}")
+
+
+class SendCancellationRequest(BaseModel):
+    vendor_email: str
+    subject: str
+    body: str
+
+@app.post("/api/subscriptions/{sub_id}/send-cancellation")
+def send_cancellation(sub_id: int, payload: SendCancellationRequest, db: Session = Depends(database.get_db)):
+    """Sends the finalized cancellation email via SMTP and updates subscription status."""
+    sub_record = db.query(models.Subscription).filter(models.Subscription.id == sub_id).first()
+    if not sub_record:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+        
+    from utils import send_cancellation_email
+    try:
+        # Send the email
+        send_cancellation_email(payload.vendor_email, payload.subject, payload.body)
+        
+        # Update the database to reflect it was sent/canceled
+        sub_record.action_plan = "Cancel"
+        sub_record.status = "Cancellation Sent"
+        
+        raw_data = dict(sub_record.raw_data)
+        raw_data["is_inactive"] = True
+        raw_data["leak_score"] = 0
+        raw_data["recommendation"] = "Resolved"
+        raw_data["recommendation_reason"] = f"Cancellation email successfully sent to {payload.vendor_email}."
+        
+        sub_record.raw_data = raw_data
+        sub_record.leak_score = 0
+        db.commit()
+        
+        # Return updated stats and subs to UI
+        demo_user_id = 1
+        db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
+        # Note: We now check status != "Active" instead of just "Canceled" for inactive flag
+        all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status != "Active"} for r in db_subs]
+
+        return {
+            "subscriptions": all_scored,
+            "stats": calculate_stats(all_scored)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+
+@app.get("/api/subscriptions/{sub_id}/downgrade-options")
+def downgrade_options(sub_id: int, db: Session = Depends(database.get_db)):
+    """Fetches AI suggested downgrade options."""
+    sub_record = db.query(models.Subscription).filter(models.Subscription.id == sub_id).first()
+    if not sub_record:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+        
+    from utils import get_downgrade_options
+    try:
+        options = get_downgrade_options(sub_record.service_name, sub_record.amount)
+        return options
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch downgrade options: {str(e)}")
+
+
+class ApplyDowngradeRequest(BaseModel):
+    plan_name: str
+    new_price: float
+
+@app.patch("/api/subscriptions/{sub_id}/apply-downgrade")
+def apply_downgrade(sub_id: int, payload: ApplyDowngradeRequest, db: Session = Depends(database.get_db)):
+    """Applies a downgrade to a subscription."""
+    sub_record = db.query(models.Subscription).filter(models.Subscription.id == sub_id).first()
+    if not sub_record:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+        
+    try:
+        old_price = sub_record.amount
+        sub_record.amount = payload.new_price
+        sub_record.service_name = f"{sub_record.service_name} ({payload.plan_name})"
+        sub_record.action_plan = "Downgrade"
+        sub_record.status = "Downgraded"
+        
+        raw_data = dict(sub_record.raw_data)
+        raw_data["latest_amount"] = payload.new_price
+        raw_data["monthly_equivalent_amount"] = payload.new_price if sub_record.frequency == "Monthly" else round(payload.new_price / 12, 2)
+        raw_data["leak_score"] = max(0, raw_data.get("leak_score", 0) - 30)
+        raw_data["recommendation"] = "Optimized"
+        raw_data["recommendation_reason"] = f"Successfully downgraded to {payload.plan_name} plan, saving you money."
+        
+        sub_record.raw_data = raw_data
+        sub_record.leak_score = raw_data["leak_score"]
+        db.commit()
+        
+        demo_user_id = 1
+        db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
+        all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status != "Active"} for r in db_subs]
+
+        return {
+            "subscriptions": all_scored,
+            "stats": calculate_stats(all_scored)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to apply downgrade: {str(e)}")
 
 
 @app.get("/api/health")

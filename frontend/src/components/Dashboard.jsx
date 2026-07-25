@@ -5,20 +5,20 @@ import SubscriptionCard from './SubscriptionCard';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
 
-export default function Dashboard({ analysisResult, inactiveMerchants, onToggleInactive, onReset }) {
+export default function Dashboard({ analysisResult, onUpdateSubscription, onUpdateData, onReset }) {
   const { subscriptions, stats } = analysisResult;
 
   const categoryData = useMemo(() => {
     const totals = {};
     subscriptions.forEach(sub => {
-      if (sub.is_recurring && !inactiveMerchants.includes(sub.merchant)) {
+      if (sub.is_recurring && !sub.is_inactive) {
         totals[sub.category] = (totals[sub.category] || 0) + (sub.monthly_equivalent_amount || 0);
       }
     });
     return Object.entries(totals)
       .map(([name, value]) => ({ name, value: Math.round(value) }))
       .sort((a, b) => b.value - a.value);
-  }, [subscriptions, inactiveMerchants]);
+  }, [subscriptions]);
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -71,10 +71,10 @@ export default function Dashboard({ analysisResult, inactiveMerchants, onToggleI
 
         <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-card border border-border p-5 rounded-2xl flex flex-col justify-center">
            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-            Avg Monthly Cost
+            Realized Savings
           </h3>
           <div className="text-3xl font-bold text-white">
-            ₹{stats.average_monthly_cost?.toLocaleString('en-IN')}
+            ₹{stats.realized_savings?.toLocaleString('en-IN') || 0}
           </div>
         </div>
 
@@ -155,14 +155,12 @@ export default function Dashboard({ analysisResult, inactiveMerchants, onToggleI
              <h3 className="text-lg font-bold text-white">All Detected Subscriptions</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {subscriptions.map(sub => (
+            {subscriptions.map((sub, index) => (
               <SubscriptionCard
-                key={sub.merchant}
-                subscription={{
-                  ...sub,
-                  is_inactive: inactiveMerchants.includes(sub.merchant)
-                }}
-                onToggleInactive={onToggleInactive}
+                key={`${sub.merchant}-${index}`}
+                subscription={sub}
+                onUpdateSubscription={onUpdateSubscription}
+                onUpdateData={onUpdateData}
               />
             ))}
             {subscriptions.length === 0 && (

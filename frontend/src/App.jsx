@@ -1,19 +1,33 @@
-import { useState } from 'react';
-import { analyzeText, rescoreSubscriptions } from './api';
+import { useState, useEffect } from 'react';
+import { analyzeText, getSubscriptions, updateSubscription } from './api';
 import InputForm from './components/InputForm';
 import Dashboard from './components/Dashboard';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, UserCircle2 } from 'lucide-react';
 
 function App() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
-  const [inactiveMerchants, setInactiveMerchants] = useState([]);
+
+  useEffect(() => {
+    const fetchState = async () => {
+      try {
+        const result = await getSubscriptions();
+        if (result.subscriptions && result.subscriptions.length > 0) {
+          setAnalysisResult(result);
+        }
+      } catch (err) {
+        console.error("Failed to load initial state", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchState();
+  }, []);
 
   const handleAnalyze = async (rawText, sourceType) => {
     setLoading(true);
     setError(null);
-    setInactiveMerchants([]);
     
     try {
       const result = await analyzeText(rawText, sourceType);
@@ -21,6 +35,7 @@ function App() {
     } catch (err) {
       console.error(err);
       setError(err?.response?.data?.detail || err.message || 'An error occurred while analyzing the data.');
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -29,7 +44,6 @@ function App() {
   const handleUpload = async (file) => {
     setLoading(true);
     setError(null);
-    setInactiveMerchants([]);
     
     try {
       const { uploadFile } = await import('./api');
@@ -38,38 +52,33 @@ function App() {
     } catch (err) {
       console.error(err);
       setError(err?.response?.data?.detail || err.message || 'An error occurred while uploading the file.');
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleInactive = async (merchant) => {
+  const handleUpdateSubscription = async (subId, action) => {
     if (!analysisResult) return;
     
-    const newInactive = inactiveMerchants.includes(merchant)
-      ? inactiveMerchants.filter(m => m !== merchant)
-      : [...inactiveMerchants, merchant];
-    
-    setInactiveMerchants(newInactive);
-    
     try {
-      // Optimistic update could go here, but let's wait for API for true scores
-      const result = await rescoreSubscriptions(analysisResult.subscriptions, newInactive);
+      const result = await updateSubscription(subId, action);
       setAnalysisResult(prev => ({
         ...prev,
         subscriptions: result.subscriptions,
         stats: result.stats
       }));
     } catch (err) {
-      console.error("Failed to rescore", err);
-      // Revert the toggle on error
-      setInactiveMerchants(inactiveMerchants);
+      console.error("Failed to update subscription", err);
     }
+  };
+
+  const handleUpdateData = (newData) => {
+    setAnalysisResult(newData);
   };
 
   const handleReset = () => {
     setAnalysisResult(null);
-    setInactiveMerchants([]);
     setError(null);
   };
 
@@ -86,13 +95,19 @@ function App() {
         </div>
       )}
 
+      {/* Demo Badge */}
+      <div className="absolute top-4 right-6 flex items-center gap-2 bg-secondary border border-border px-3 py-1.5 rounded-full shadow-sm z-50">
+        <UserCircle2 className="w-4 h-4 text-primary" />
+        <span className="text-xs font-semibold text-foreground tracking-wide">Rahul Sharma <span className="opacity-60">(Demo)</span></span>
+      </div>
+
       {!analysisResult ? (
         <InputForm onAnalyze={handleAnalyze} onUpload={handleUpload} isLoading={loading} />
       ) : (
         <Dashboard 
           analysisResult={analysisResult} 
-          inactiveMerchants={inactiveMerchants}
-          onToggleInactive={handleToggleInactive}
+          onUpdateSubscription={handleUpdateSubscription}
+          onUpdateData={handleUpdateData}
           onReset={handleReset}
         />
       )}

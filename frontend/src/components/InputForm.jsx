@@ -7,10 +7,17 @@ export default function InputForm({ onAnalyze, onUpload, isLoading }) {
   const [showManualInput, setShowManualInput] = useState(false);
   const [rawText, setRawText] = useState('');
   const [sourceType, setSourceType] = useState('bank_statement');
+  const [errorMessage, setErrorMessage] = useState(null);
 
-  const onDrop = useCallback((acceptedFiles) => {
+  const onDrop = useCallback(async (acceptedFiles) => {
     if (acceptedFiles.length > 0) {
-      onUpload(acceptedFiles[0]);
+      setErrorMessage(null);
+      try {
+        await onUpload(acceptedFiles[0]);
+      } catch (err) {
+        console.error("File processing error:", err);
+        setErrorMessage("Error processing file. Please ensure it is a valid CSV/PDF or try pasting text manually.");
+      }
     }
   }, [onUpload]);
 
@@ -81,6 +88,14 @@ export default function InputForm({ onAnalyze, onUpload, isLoading }) {
               </>
             )}
           </div>
+          
+          {errorMessage && (
+            <div className="text-center mt-4">
+              <p className="text-sm font-semibold text-rose-500 bg-rose-500/10 border border-rose-500/20 py-2 px-4 rounded-lg inline-block">
+                {errorMessage}
+              </p>
+            </div>
+          )}
           
           {!isLoading && (
             <div className="text-center">

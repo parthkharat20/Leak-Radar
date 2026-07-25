@@ -35,21 +35,29 @@ def score_subscriptions(subscriptions, inactive_map=None):
         s["confidence_score"] = max(0, confidence)
 
         # Feature flags
+        # Feature flags
         is_inactive = inactive_map.get(s["merchant"], False)
+        s["is_inactive"] = is_inactive
         is_duplicate = len(by_category[s["category"]]) >= 2 and s["is_recurring"]
         hike_pct = s.get("price_hike_pct", 0)
         monthly_cost = s.get("monthly_equivalent_amount", 0)
 
+        # Simple unused logic: low confidence + only 1 transaction seen
+        s["appears_unused"] = bool(s["confidence_score"] <= 60 and len(s.get("transactions", [])) <= 1)
+
         # 0-100 Score Calculation
         leak_score = 0
-        if is_inactive: leak_score += 40
-        if is_duplicate: leak_score += 30
-        if hike_pct > 0: leak_score += min(20, int(hike_pct))
-        
-        # Cost penalty
-        if monthly_cost > 1000: leak_score += 15
-        elif monthly_cost > 500: leak_score += 10
-        elif monthly_cost > 100: leak_score += 5
+        if not is_inactive:
+            if s["appears_unused"]: leak_score += 40
+            if is_duplicate: leak_score += 30
+            if hike_pct > 0: leak_score += min(20, int(hike_pct))
+            
+            # Cost penalty
+            if monthly_cost > 1000: leak_score += 15
+            elif monthly_cost > 500: leak_score += 10
+            elif monthly_cost > 100: leak_score += 5
+        else:
+            leak_score = 0 # Resolved leaks have 0 risk
 
         leak_score = min(100, max(0, leak_score))
         s["leak_score"] = leak_score
@@ -58,12 +66,12 @@ def score_subscriptions(subscriptions, inactive_map=None):
         reason = []
         rec = ""
 
-        if s["confidence_score"] < 60:
+        if is_inactive:
+            rec = "Resolved"
+            reason = [f"You marked {s['merchant']} as resolved/cancelled. This leak is sealed!"]
+        elif s["confidence_score"] < 60:
             rec = "Needs Manual Review"
             reason = [f"Our AI lacks sufficient historical data to confidently analyze {s['merchant']}'s billing cycle."]
-        elif is_inactive:
-            rec = "Cancel Immediately"
-            reason = [f"You marked {s['merchant']} as inactive. Canceling will immediately save you ₹{int(monthly_cost)}/mo."]
         elif is_duplicate:
             if s["category"].lower() == "streaming":
                 rec = "Consolidate Streaming Services"
@@ -94,8 +102,5 @@ def score_subscriptions(subscriptions, inactive_map=None):
 
         s["recommendation"] = rec
         s["recommendation_reason"] = " ".join(reason)
-        
-        # Simple unused logic: low confidence + only 1 transaction seen
-        s["appears_unused"] = bool(s["confidence_score"] <= 60 and len(s["transactions"]) <= 1)
 
     return subscriptions

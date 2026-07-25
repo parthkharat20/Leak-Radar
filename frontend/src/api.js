@@ -19,10 +19,34 @@ export const uploadFile = async (file) => {
   return response.data;
 };
 
-export const rescoreSubscriptions = async (subscriptions, inactive_merchants = []) => {
-  const response = await axios.post(`${API_BASE_URL}/rescore`, {
-    subscriptions,
-    inactive_merchants,
+export const getSubscriptions = async () => {
+  const response = await axios.get(`${API_BASE_URL}/subscriptions`);
+  return response.data;
+};
+
+export const updateSubscription = async (subId, action) => {
+  const response = await axios.patch(`${API_BASE_URL}/subscriptions/${subId}`, {
+    action,
   });
+  return response.data;
+};
+
+export const draftCancellationEmail = async (subId) => {
+  const response = await axios.get(`${API_BASE_URL}/subscriptions/${subId}/draft-cancellation`);
+  return response.data;
+};
+
+export const sendCancellationEmail = async (subId, payload) => {
+  const response = await axios.post(`${API_BASE_URL}/subscriptions/${subId}/send-cancellation`, payload);
+  return response.data;
+};
+
+export const getDowngradeOptions = async (subId) => {
+  const response = await axios.get(`${API_BASE_URL}/subscriptions/${subId}/downgrade-options`);
+  return response.data;
+};
+
+export const applyDowngrade = async (subId, payload) => {
+  const response = await axios.patch(`${API_BASE_URL}/subscriptions/${subId}/apply-downgrade`, payload);
   return response.data;
 };

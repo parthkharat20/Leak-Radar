@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { cn } from '../lib/utils';
 import { AlertCircle, ArrowUpRight, CheckCircle2, Info, Tag, Calendar, ShieldAlert, Sparkles, Layers, RefreshCcw } from 'lucide-react';
+import CancellationModal from './CancellationModal';
+import DowngradeModal from './DowngradeModal';
 
-export default function SubscriptionCard({ subscription, onToggleInactive }) {
+export default function SubscriptionCard({ subscription, onUpdateSubscription, onUpdateData }) {
   const {
+    id,
     merchant,
     category,
     is_recurring,
@@ -16,6 +20,9 @@ export default function SubscriptionCard({ subscription, onToggleInactive }) {
     renewal_date,
     is_inactive = false,
   } = subscription;
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
 
   const getActionColor = (action) => {
     switch (action) {
@@ -178,7 +185,7 @@ export default function SubscriptionCard({ subscription, onToggleInactive }) {
           <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground text-center">Action Plan</p>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => !is_inactive && onToggleInactive(merchant)}
+              onClick={() => !is_inactive && setIsModalOpen(true)}
               className={cn("flex-1 py-1.5 text-xs font-semibold rounded transition-colors border",
                 is_inactive ? "bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-500/20" : "bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20"
               )}
@@ -186,7 +193,7 @@ export default function SubscriptionCard({ subscription, onToggleInactive }) {
               Cancel
             </button>
             <button
-              onClick={() => !is_inactive && onToggleInactive(merchant)}
+              onClick={() => !is_inactive && setIsDowngradeModalOpen(true)}
               className={cn("flex-1 py-1.5 text-xs font-semibold rounded transition-colors border",
                 is_inactive ? "bg-amber-500/20 text-amber-500 border-amber-500/30" : "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20"
               )}
@@ -194,7 +201,7 @@ export default function SubscriptionCard({ subscription, onToggleInactive }) {
               Downgrade
             </button>
             <button
-              onClick={() => is_inactive && onToggleInactive(merchant)}
+              onClick={() => is_inactive && onUpdateSubscription(id || merchant, 'Keep')}
               className={cn("flex-1 py-1.5 text-xs font-semibold rounded transition-colors border",
                 !is_inactive ? "bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/20" : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
               )}
@@ -209,6 +216,28 @@ export default function SubscriptionCard({ subscription, onToggleInactive }) {
           </div>
         </div>
       </div>
+      
+      <CancellationModal 
+        subscription={subscription} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={(updatedData) => {
+          if (onUpdateData) {
+            onUpdateData(updatedData);
+          }
+        }}
+      />
+
+      <DowngradeModal
+        subscription={subscription}
+        isOpen={isDowngradeModalOpen}
+        onClose={() => setIsDowngradeModalOpen(false)}
+        onSuccess={(updatedData) => {
+          if (onUpdateData) {
+            onUpdateData(updatedData);
+          }
+        }}
+      />
     </div>
   );
 }
