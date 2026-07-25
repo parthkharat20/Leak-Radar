@@ -98,7 +98,7 @@ function App() {
       {/* Demo Badge */}
       <div className="absolute top-4 right-6 flex items-center gap-2 bg-secondary border border-border px-3 py-1.5 rounded-full shadow-sm z-50">
         <UserCircle2 className="w-4 h-4 text-primary" />
-        <span className="text-xs font-semibold text-foreground tracking-wide">Rahul Sharma <span className="opacity-60">(Demo)</span></span>
+        <span className="text-xs font-semibold text-foreground tracking-wide">Parth Kharat <span className="opacity-60">(Demo)</span></span>
       </div>
 
       {!analysisResult ? (

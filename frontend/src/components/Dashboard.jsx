@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { AlertTriangle, TrendingDown, IndianRupee, RotateCw, Activity, CalendarDays, Wallet } from 'lucide-react';
 import SubscriptionCard from './SubscriptionCard';
+import CashflowRadar from './CashflowRadar';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
 
@@ -80,9 +81,12 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
 
       </div>
 
+      {/* Cashflow Radar (AI Timeline) */}
+      <CashflowRadar />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Sidebar Stats & Charts */}
+        {/* Left Column: Category Chart */}
         <div className="lg:col-span-1 space-y-6">
           
           <div className="bg-card border border-border p-6 rounded-2xl shadow-lg">

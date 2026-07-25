@@ -108,3 +108,117 @@ Example output format:
             {"plan_name": "Basic / Ad-supported", "new_price": round(current_price * 0.4, 2), "savings": round(current_price * 0.6, 2), "features": "Limited features"},
             {"plan_name": "Standard", "new_price": round(current_price * 0.7, 2), "savings": round(current_price * 0.3, 2), "features": "Standard features"}
         ]
+
+def analyze_cashflow_shock(timeline_data: list) -> dict:
+    """Uses Groq to analyze a 30-day timeline for clustering shocks."""
+    
+    system_prompt = """You are a financial cashflow AI. Analyze the upcoming 30-day subscription renewals.
+Identify "Shock Clusters" (multiple heavy charges hitting within 24-48 hours of each other that could cause an overdraft).
+
+You must return ONLY a strict JSON object. Do not include markdown formatting like ```json, no preamble, and no explanation.
+
+Example output format:
+{
+  "timeline": [
+    {"date": "2026-07-26", "amount": 649, "services": ["Netflix"]}
+  ],
+  "shock_alert": {
+    "has_risk": true,
+    "message": "High risk: ₹2,100 in renewals hitting between July 28-30."
+  }
+}
+"""
+    
+    user_prompt = f"Analyze this timeline and return the enriched JSON with a shock_alert:\n{json.dumps(timeline_data)}"
+    
+    resp = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0,
+        response_format={"type": "json_object"} # Groq JSON mode
+    )
+    
+    content = resp.choices[0].message.content.strip()
+    
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return {
+            "timeline": timeline_data,
+            "shock_alert": {
+                "has_risk": False,
+                "message": "Failed to analyze cashflow risk."
+            }
+        }
+
+def generate_negotiation_playbook(service_name: str, amount: float, frequency: str) -> dict:
+    """Uses Groq to generate a 3-bullet negotiation cheatsheet and an initial bot greeting."""
+    system_prompt = f"""You are an AI negotiation coach.
+The user wants to negotiate their {service_name} subscription which costs {amount} ({frequency}).
+
+Generate a JSON object with:
+1. `script`: An array of exactly 3 concise, highly effective bullet points for negotiating a lower rate or fee waiver.
+2. `initial_bot_message`: A realistic opening message acting as a customer support rep for {service_name}.
+
+You must return ONLY a strict JSON object. No preamble, no markdown formatting.
+Example format:
+{{
+  "script": ["Mention competitor X offers a cheaper plan.", "Ask for the customer retention department.", "Request a one-time courtesy fee waiver."],
+  "initial_bot_message": "Hello from {service_name} Support! I see you are inquiring about your billing. How can I assist you today?"
+}}
+"""
+    try:
+        resp = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": system_prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        return json.loads(resp.choices[0].message.content.strip())
+    except Exception as e:
+        return {
+            "script": ["Highlight your loyalty.", "Ask for current promotions.", "Threaten to cancel if they can't help."],
+            "initial_bot_message": f"Welcome to {service_name} support. How can I help you today?"
+        }
+
+def simulate_negotiation_chat(service_name: str, amount: float, chat_history: list) -> dict:
+    """Uses Groq to simulate the vendor's retention rep based on chat history."""
+    
+    system_prompt = f"""You are a tough but realistic customer retention representative for {service_name}. 
+The user is paying {amount} and wants a discount. 
+
+Your goals:
+1. Push back at first (e.g., "I'm sorry, that's our standard rate").
+2. If the user mentions cancelling, a competitor, or presses hard, offer a 30-50% discount.
+3. Stay strictly in character. Do not break the fourth wall.
+
+You must return ONLY a strict JSON object. No preamble, no markdown formatting.
+Example format:
+{{
+  "reply": "I understand the price is a concern. As a loyal customer, I can offer you a 30% discount for the next 6 months. Does that work?",
+  "discount_offered": true
+}}
+"""
+    
+    messages = [{"role": "system", "content": system_prompt}]
+    for msg in chat_history:
+        # Chat history from frontend is usually { sender: 'user' | 'bot', text: '...' }
+        role = "user" if msg.get("sender") == "user" else "assistant"
+        messages.append({"role": role, "content": msg.get("text", "")})
+        
+    try:
+        resp = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            temperature=0.7,
+            response_format={"type": "json_object"}
+        )
+        return json.loads(resp.choices[0].message.content.strip())
+    except Exception as e:
+        return {
+            "reply": "I'm having trouble connecting to our billing system right now.",
+            "discount_offered": False
+        }

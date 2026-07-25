@@ -38,11 +38,15 @@ app.add_middleware(
 def startup_event():
     db = database.SessionLocal()
     try:
-        demo_user = db.query(models.User).filter(models.User.email == "rahul.sharma@example.com").first()
+        # Check by id=1 so we update the existing row rather than creating a duplicate
+        demo_user = db.query(models.User).filter(models.User.id == 1).first()
         if not demo_user:
-            demo_user = models.User(name="Rahul Sharma", email="rahul.sharma@example.com")
+            demo_user = models.User(id=1, name="Parth Kharat", email="parth.kharat@example.com")
             db.add(demo_user)
-            db.commit()
+        else:
+            demo_user.name = "Parth Kharat"
+            demo_user.email = "parth.kharat@example.com"
+        db.commit()
     finally:
         db.close()
 
@@ -377,6 +381,108 @@ def apply_downgrade(sub_id: int, payload: ApplyDowngradeRequest, db: Session = D
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to apply downgrade: {str(e)}")
+
+
+@app.get("/api/cashflow-forecast")
+def cashflow_forecast(db: Session = Depends(database.get_db)):
+    """Predictive analytics endpoint that builds a 30-day cashflow timeline and uses Groq to detect shock clusters."""
+    demo_user_id = 1
+    db_subs = db.query(models.Subscription).filter(
+        models.Subscription.user_id == demo_user_id,
+        models.Subscription.status == "Active"
+    ).all()
+    
+    from datetime import datetime, timedelta
+    import random
+    from collections import defaultdict
+    from utils import analyze_cashflow_shock
+    
+    today = datetime.now()
+    timeline_dict = defaultdict(lambda: {"amount": 0, "services": []})
+    
+    for sub in db_subs:
+        raw = sub.raw_data or {}
+        renewal = raw.get("renewal_date")
+        amount = raw.get("latest_amount", sub.amount)
+        service = sub.service_name
+        
+        # Safe Date Math Fallback: If no date, pick a random day in the next 30 days for demo purposes
+        if not renewal:
+            random_days = random.randint(1, 30)
+            renewal_date = today + timedelta(days=random_days)
+        else:
+            try:
+                # Assuming format is YYYY-MM-DD
+                parsed_date = datetime.strptime(renewal, "%Y-%m-%d")
+                # If the renewal date is in the past or far future, shift it into the next 30 days for the demo
+                if parsed_date < today or parsed_date > today + timedelta(days=30):
+                    random_days = random.randint(1, 30)
+                    renewal_date = today + timedelta(days=random_days)
+                else:
+                    renewal_date = parsed_date
+            except ValueError:
+                random_days = random.randint(1, 30)
+                renewal_date = today + timedelta(days=random_days)
+                
+        date_str = renewal_date.strftime("%Y-%m-%d")
+        timeline_dict[date_str]["amount"] += amount
+        timeline_dict[date_str]["services"].append(service)
+        
+    # Generate continuous 30 day timeline, even for empty days, so the chart looks nice
+    timeline_array = []
+    for i in range(30):
+        current_date = (today + timedelta(days=i)).strftime("%Y-%m-%d")
+        if current_date in timeline_dict:
+            timeline_array.append({
+                "date": current_date,
+                "amount": timeline_dict[current_date]["amount"],
+                "services": timeline_dict[current_date]["services"]
+            })
+        else:
+            timeline_array.append({
+                "date": current_date,
+                "amount": 0,
+                "services": []
+            })
+            
+    try:
+        enriched_data = analyze_cashflow_shock(timeline_array)
+        return enriched_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to analyze cashflow: {str(e)}")
+
+
+@app.post("/api/subscriptions/{sub_id}/negotiate")
+def negotiate_subscription(sub_id: int, db: Session = Depends(database.get_db)):
+    """Fetches AI generated negotiation playbook."""
+    sub_record = db.query(models.Subscription).filter(models.Subscription.id == sub_id).first()
+    if not sub_record:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+        
+    from utils import generate_negotiation_playbook
+    try:
+        playbook = generate_negotiation_playbook(sub_record.service_name, sub_record.amount, sub_record.frequency)
+        return playbook
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate playbook: {str(e)}")
+
+
+class ChatHistoryRequest(BaseModel):
+    chat_history: list
+
+@app.post("/api/subscriptions/{sub_id}/negotiate-chat")
+def simulate_negotiation(sub_id: int, payload: ChatHistoryRequest, db: Session = Depends(database.get_db)):
+    """Simulates a negotiation chat response using AI."""
+    sub_record = db.query(models.Subscription).filter(models.Subscription.id == sub_id).first()
+    if not sub_record:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+        
+    from utils import simulate_negotiation_chat
+    try:
+        response = simulate_negotiation_chat(sub_record.service_name, sub_record.amount, payload.chat_history)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to simulate chat: {str(e)}")
 
 
 @app.get("/api/health")

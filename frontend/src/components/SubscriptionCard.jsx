@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { cn } from '../lib/utils';
-import { AlertCircle, ArrowUpRight, CheckCircle2, Info, Tag, Calendar, ShieldAlert, Sparkles, Layers, RefreshCcw } from 'lucide-react';
+import { AlertCircle, ArrowUpRight, CheckCircle2, Info, Tag, Calendar, ShieldAlert, Sparkles, Layers, RefreshCcw, MessageSquare } from 'lucide-react';
 import CancellationModal from './CancellationModal';
 import DowngradeModal from './DowngradeModal';
+import NegotiateModal from './NegotiateModal';
 
 export default function SubscriptionCard({ subscription, onUpdateSubscription, onUpdateData }) {
   const {
@@ -23,6 +24,7 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
+  const [isNegotiateModalOpen, setIsNegotiateModalOpen] = useState(false);
 
   const getActionColor = (action) => {
     switch (action) {
@@ -201,17 +203,12 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
               Downgrade
             </button>
             <button
-              onClick={() => is_inactive && onUpdateSubscription(id || merchant, 'Keep')}
-              className={cn("flex-1 py-1.5 text-xs font-semibold rounded transition-colors border",
-                !is_inactive ? "bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/20" : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
+              onClick={() => !is_inactive && setIsNegotiateModalOpen(true)}
+              className={cn("flex-1 py-1.5 text-xs font-semibold rounded transition-colors border flex items-center justify-center gap-1",
+                is_inactive ? "bg-indigo-500/20 text-indigo-500 border-indigo-500/30" : "bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:bg-indigo-500/20"
               )}
             >
-              Keep
-            </button>
-          </div>
-          <div className="text-center">
-            <button className="text-[10px] font-semibold text-muted-foreground hover:text-indigo-400 underline underline-offset-2 transition-colors">
-              Renegotiate Contract
+              <MessageSquare className="w-3.5 h-3.5" /> Negotiate
             </button>
           </div>
         </div>
@@ -237,6 +234,12 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
             onUpdateData(updatedData);
           }
         }}
+      />
+
+      <NegotiateModal
+        subscription={subscription}
+        isOpen={isNegotiateModalOpen}
+        onClose={() => setIsNegotiateModalOpen(false)}
       />
     </div>
   );
