@@ -6,7 +6,7 @@
     },
     {
       "src": "frontend/package.json",
-      "use": "@vercel/vite"
+      "use": "@vercel/static-build"
     }
   ],
   "rewrites": [
@@ -16,7 +16,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/frontend/dist/$1"
+      "destination": "/frontend/$1"
     }
   ]
 }
