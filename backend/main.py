@@ -140,8 +140,13 @@ def calculate_stats(scored):
     active_all = [s for s in scored if not s.get("is_inactive")]
     highest_leak_score = max([s.get("leak_score", 0) for s in active_all] or [0])
     
-    # Overall leak score should be based on ALL subscriptions so that resolving/canceling (which drops leak_score to 0) decreases the average.
-    overall_leak_score = int(sum(s.get("leak_score", 0) for s in scored) / len(scored)) if scored else 0
+    # Overall leak score is cost-weighted. This prevents the score from spiking if a low-cost, low-leak subscription is removed.
+    total_cost = sum(s.get("monthly_equivalent_amount", 0) for s in scored)
+    if total_cost > 0:
+        weighted_leak_sum = sum(s.get("leak_score", 0) * s.get("monthly_equivalent_amount", 0) for s in scored)
+        overall_leak_score = int(weighted_leak_sum / total_cost)
+    else:
+        overall_leak_score = int(sum(s.get("leak_score", 0) for s in scored) / len(scored)) if scored else 0
     
     upcoming_renewals = [s for s in active_all if s.get("renewal_date")]
     upcoming_renewals = sorted(upcoming_renewals, key=lambda x: x["renewal_date"])[:3]
