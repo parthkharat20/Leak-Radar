@@ -18,10 +18,22 @@ from sqlalchemy.orm import Session
 import models
 import database
 from database import engine
+from fastapi.responses import JSONResponse
+import traceback
 
-models.Base.metadata.create_all(bind=engine)
+try:
+    models.Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print("Database creation failed on boot:", str(e))
 
 app = FastAPI(title="LeakRadar API")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal Server Error", "detail": str(exc), "traceback": traceback.format_exc()}
+    )
 
 app.add_middleware(
     CORSMiddleware,
