@@ -83,22 +83,22 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 selection:bg-sky-400/20 py-12 px-4 sm:px-6 lg:px-8 font-sans">
       
       {error && (
-        <div className="max-w-4xl mx-auto mb-8 bg-destructive/15 border border-destructive/30 text-destructive px-4 py-3 rounded-xl flex items-start gap-3">
+        <div className="max-w-4xl mx-auto mb-8 bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-lg flex items-start gap-3">
           <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
           <div>
-            <h4 className="font-semibold">Analysis Failed</h4>
-            <p className="text-sm opacity-90">{error}</p>
+            <h4 className="font-medium text-zinc-100">Analysis Failed</h4>
+            <p className="text-sm text-rose-400/90">{error}</p>
           </div>
         </div>
       )}
 
       {/* Demo Badge */}
-      <div className="absolute top-4 right-6 flex items-center gap-2 bg-secondary border border-border px-3 py-1.5 rounded-full shadow-sm z-50">
-        <UserCircle2 className="w-4 h-4 text-primary" />
-        <span className="text-xs font-semibold text-foreground tracking-wide">Parth Kharat <span className="opacity-60">(Demo)</span></span>
+      <div className="absolute top-4 right-4 sm:right-6 flex items-center gap-2 bg-zinc-900/40 border border-zinc-800/70 px-3 py-1.5 rounded-full z-50">
+        <UserCircle2 className="w-4 h-4 text-sky-400" />
+        <span className="text-xs font-medium text-zinc-100 tracking-wide">Parth Kharat <span className="text-zinc-500">(Demo)</span></span>
       </div>
 
       {!analysisResult ? (

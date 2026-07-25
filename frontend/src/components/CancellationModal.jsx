@@ -49,7 +49,7 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
       setTimeout(() => {
         onSuccess(updatedData);
         onClose();
-      }, 2000); // Wait 2s to show success toast
+      }, 2000);
     } catch (err) {
       setError(err?.response?.data?.detail || "Failed to send email. Check SMTP credentials.");
       setSending(false);
@@ -59,21 +59,21 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/95 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/90">
+      <div className="bg-zinc-900/40 border border-zinc-800/70 rounded-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between bg-gray-900/50">
+        <div className="px-6 py-4 border-b border-zinc-800/70 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-primary/20 p-2 rounded-full">
-              <Bot className="w-5 h-5 text-primary" />
+            <div className="bg-sky-400/10 p-2 rounded-full border border-sky-400/20">
+              <Bot className="w-5 h-5 text-sky-400" />
             </div>
-            <h2 className="text-lg font-bold text-white">AI Cancellation Drafter</h2>
+            <h2 className="text-base font-medium text-zinc-100">AI Cancellation Drafter</h2>
           </div>
           <button 
             onClick={onClose}
             disabled={sending || success}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-full transition-colors disabled:opacity-50"
+            className="p-2 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-full transition-colors duration-150 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
           >
             <X className="w-5 h-5" />
           </button>
@@ -83,23 +83,23 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
         <div className="p-6 flex-1 overflow-y-auto space-y-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-4">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
-              <p className="text-gray-400 font-medium tracking-wide animate-pulse">
+              <Loader2 className="w-10 h-10 text-sky-400 animate-spin" />
+              <p className="text-zinc-500 text-sm font-medium">
                 AI Agent is drafting...
               </p>
             </div>
           ) : success ? (
-            <div className="flex flex-col items-center justify-center py-16 space-y-4 text-emerald-500">
-              <div className="bg-emerald-500/20 p-4 rounded-full">
-                <CheckCircle2 className="w-12 h-12" />
+            <div className="flex flex-col items-center justify-center py-16 space-y-4">
+              <div className="bg-emerald-500/10 p-4 rounded-full border border-emerald-500/20">
+                <CheckCircle2 className="w-12 h-12 text-emerald-400" />
               </div>
-              <h3 className="text-xl font-bold text-white">Email successfully delivered!</h3>
-              <p className="text-sm text-gray-400">Updating your dashboard...</p>
+              <h3 className="text-xl font-medium text-zinc-100">Email successfully delivered!</h3>
+              <p className="text-sm text-zinc-500">Updating your dashboard...</p>
             </div>
           ) : (
             <>
               {error && (
-                <div className="bg-rose-500/10 border border-rose-500/30 text-rose-500 px-4 py-3 rounded-lg flex items-start gap-3">
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-lg flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
                   <p className="text-sm">{error}</p>
                 </div>
@@ -107,32 +107,32 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
               
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 ml-1">To (Vendor Email)</label>
+                  <label className="text-xs uppercase tracking-wide text-zinc-500 font-medium ml-1">To (Vendor Email)</label>
                   <input 
                     type="email"
                     value={draft.vendor_email}
                     onChange={(e) => setDraft({...draft, vendor_email: e.target.value})}
-                    className="w-full bg-gray-900 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2.5 text-sm text-gray-200 outline-none transition-all"
+                    className="w-full bg-[#09090b] border border-zinc-800/70 focus-visible:ring-2 focus-visible:ring-sky-400 rounded-lg px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors"
                   />
                 </div>
                 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 ml-1">Subject</label>
+                  <label className="text-xs uppercase tracking-wide text-zinc-500 font-medium ml-1">Subject</label>
                   <input 
                     type="text"
                     value={draft.subject}
                     onChange={(e) => setDraft({...draft, subject: e.target.value})}
-                    className="w-full bg-gray-900 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-2.5 text-sm text-gray-200 outline-none transition-all"
+                    className="w-full bg-[#09090b] border border-zinc-800/70 focus-visible:ring-2 focus-visible:ring-sky-400 rounded-lg px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-400 ml-1">Message Body</label>
+                  <label className="text-xs uppercase tracking-wide text-zinc-500 font-medium ml-1">Message Body</label>
                   <textarea 
                     value={draft.body}
                     onChange={(e) => setDraft({...draft, body: e.target.value})}
                     rows={8}
-                    className="w-full bg-gray-900 border border-gray-700 focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 text-sm text-gray-200 outline-none transition-all resize-none"
+                    className="w-full bg-[#09090b] border border-zinc-800/70 focus-visible:ring-2 focus-visible:ring-sky-400 rounded-lg px-4 py-3 text-sm text-zinc-200 outline-none transition-colors resize-none"
                   />
                 </div>
               </div>
@@ -142,11 +142,11 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
 
         {/* Footer */}
         {!loading && !success && (
-          <div className="px-6 py-4 border-t border-gray-800 bg-gray-900/50 flex justify-end gap-3">
+          <div className="px-6 py-4 border-t border-zinc-800/70 flex justify-end gap-3">
             <button
               onClick={onClose}
               disabled={sending}
-              className="px-5 py-2.5 rounded-lg text-sm font-semibold text-gray-400 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 rounded-full text-sm font-medium text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors duration-150 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
             >
               Cancel
             </button>
@@ -154,10 +154,10 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
               onClick={handleSend}
               disabled={sending || !draft.vendor_email}
               className={cn(
-                "px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-lg",
+                "px-6 py-2.5 rounded-full text-sm font-medium flex items-center gap-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400",
                 sending || !draft.vendor_email
-                  ? "bg-gray-800 text-gray-500 cursor-not-allowed"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20"
+                  ? "bg-zinc-900/40 text-zinc-500 cursor-not-allowed border border-zinc-800/70"
+                  : "bg-sky-400/10 text-sky-400 border border-sky-400/20 hover:bg-sky-400/20"
               )}
             >
               {sending ? (

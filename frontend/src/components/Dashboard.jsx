@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { AlertTriangle, TrendingDown, IndianRupee, RotateCw, Activity, CalendarDays, Wallet } from 'lucide-react';
+import { TrendingDown, RotateCw, Activity, CalendarDays, Wallet } from 'lucide-react';
+import { cn } from '../lib/utils';
 import SubscriptionCard from './SubscriptionCard';
 import CashflowRadar from './CashflowRadar';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
+const COLORS = ['#38bdf8', '#10b981', '#f59e0b', '#f43f5e', '#818cf8', '#a78bfa', '#71717a'];
 
 export default function Dashboard({ analysisResult, onUpdateSubscription, onUpdateData, onReset }) {
   const { subscriptions, stats } = analysisResult;
@@ -21,60 +22,82 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
       .sort((a, b) => b.value - a.value);
   }, [subscriptions]);
 
+  const leakScore = stats.overall_leak_score || 0;
+
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">Analysis Complete</h2>
-          <p className="text-muted-foreground mt-1">
+          <h2 className="text-2xl font-semibold text-zinc-100 tracking-tight">Analysis Complete</h2>
+          <p className="text-zinc-400 text-sm mt-1">
             We found {subscriptions.length} transactions, tracking {stats.recurring_count} active subscriptions.
           </p>
         </div>
         <button
           onClick={onReset}
-          className="px-4 py-2 text-sm font-medium text-foreground bg-secondary hover:bg-secondary/80 rounded-lg transition-colors border border-border"
+          className="px-4 py-2 text-sm font-medium text-zinc-400 bg-zinc-900/40 hover:text-zinc-100 hover:border-zinc-700/80 rounded-full transition-colors duration-150 border border-zinc-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
         >
           Analyze Another File
         </button>
       </div>
 
-      {/* Top Level Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        
-        {/* HUGE Leak Score Card */}
-        <div className="col-span-1 md:col-span-3 lg:col-span-2 bg-gradient-to-br from-rose-500/20 via-rose-500/10 to-transparent border border-rose-500/30 p-6 rounded-2xl relative overflow-hidden flex flex-col justify-center">
-          <h3 className="text-sm font-semibold text-rose-500/80 uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Activity className="w-4 h-4" /> Overall Leak Score
-          </h3>
-          <div className="text-6xl font-extrabold text-rose-500 tracking-tighter">
-            {stats.overall_leak_score || 0}<span className="text-2xl text-rose-500/50">/100</span>
+      {/* Top Level Stats — Bento Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+
+        {/* Hero Leak Score Card with Radar Sweep */}
+        <div className="bg-zinc-900/40 border border-zinc-800/70 hover:border-zinc-700/80 transition-colors duration-150 p-6 rounded-lg relative overflow-hidden flex flex-col justify-center min-h-[160px]">
+          <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium mb-4">
+            Overall Leak Score
+          </p>
+
+          <div className="relative flex items-center justify-center">
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <div
+                className="absolute inset-0 rounded-full animate-radar-sweep"
+                style={{
+                  background: 'conic-gradient(from 0deg, transparent 0deg, transparent 250deg, rgba(56, 189, 248, 0.45) 320deg, transparent 360deg)',
+                }}
+              />
+              <div className="absolute inset-1.5 rounded-full bg-[#09090b]" />
+              <span className={cn(
+                "relative z-10 text-4xl font-semibold font-mono tabular-nums inline-block",
+                leakScore > 60
+                  ? "text-rose-400 shadow-[0_0_24px_-8px_theme(colors.rose.500)]"
+                  : "bg-gradient-to-br from-zinc-100 to-zinc-400 bg-clip-text text-transparent"
+              )}>
+                {leakScore}
+              </span>
+            </div>
           </div>
-          <p className="text-sm text-rose-500/80 mt-2 font-medium">Higher score = more money being wasted.</p>
+
+          <p className="text-xs text-zinc-500 mt-3 text-center font-mono tabular-nums">
+            /100 · higher = more waste
+          </p>
         </div>
 
-        <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-primary/10 border border-primary/20 p-5 rounded-2xl flex flex-col justify-center">
-          <h3 className="text-xs font-semibold text-primary/80 uppercase tracking-wider mb-1">
+        <div className="bg-zinc-900/40 border border-zinc-800/70 hover:border-zinc-700/80 transition-colors duration-150 p-6 rounded-lg flex flex-col justify-center">
+          <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium mb-2">
             Total Monthly Spend
-          </h3>
-          <div className="text-3xl font-extrabold text-primary flex items-baseline gap-1">
-            ₹{stats.total_monthly_spend?.toLocaleString('en-IN')} <span className="text-xs font-medium opacity-70">/mo</span>
+          </p>
+          <div className="text-2xl font-semibold text-zinc-100 font-mono tabular-nums flex items-baseline gap-1">
+            ₹{stats.total_monthly_spend?.toLocaleString('en-IN')}<span className="text-xs font-normal text-zinc-500">/mo</span>
           </div>
         </div>
 
-        <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-2xl flex flex-col justify-center">
-          <h3 className="text-xs font-semibold text-emerald-500/80 uppercase tracking-wider mb-1 flex items-center gap-1">
+        <div className="bg-zinc-900/40 border border-zinc-800/70 hover:border-zinc-700/80 transition-colors duration-150 p-6 rounded-lg flex flex-col justify-center">
+          <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium mb-2 flex items-center gap-1.5">
             <TrendingDown className="w-3 h-3" /> Potential Savings
-          </h3>
-          <div className="text-3xl font-extrabold text-emerald-500">
+          </p>
+          <div className="text-2xl font-semibold text-emerald-400 font-mono tabular-nums">
             ₹{stats.potential_savings?.toLocaleString('en-IN')}
           </div>
         </div>
 
-        <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-card border border-border p-5 rounded-2xl flex flex-col justify-center">
-           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+        <div className="bg-zinc-900/40 border border-zinc-800/70 hover:border-zinc-700/80 transition-colors duration-150 p-6 rounded-lg flex flex-col justify-center">
+          <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium mb-2">
             Realized Savings
-          </h3>
-          <div className="text-3xl font-bold text-white">
+          </p>
+          <div className="text-2xl font-semibold text-zinc-100 font-mono tabular-nums">
             ₹{stats.realized_savings?.toLocaleString('en-IN') || 0}
           </div>
         </div>
@@ -84,16 +107,15 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
       {/* Cashflow Radar (AI Timeline) */}
       <CashflowRadar />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column: Category Chart */}
-        <div className="lg:col-span-1 space-y-6">
-          
-          <div className="bg-card border border-border p-6 rounded-2xl shadow-lg">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
+
+        {/* Left Column — unified sidebar panel */}
+        <div className="bg-zinc-900/40 border border-zinc-800/70 rounded-xl p-6 space-y-6">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium mb-6">
               Spend by Category (Monthly)
-            </h3>
-            <div className="h-[250px] w-full">
+            </p>
+            <div className="h-[220px] w-full">
               {categoryData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -101,8 +123,8 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
                       data={categoryData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      innerRadius={55}
+                      outerRadius={75}
                       paddingAngle={5}
                       dataKey="value"
                       stroke="none"
@@ -112,53 +134,59 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value) => `₹${value.toLocaleString('en-IN')}`}
-                      contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
-                      itemStyle={{ color: '#f8fafc' }}
+                      formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, 'Amount']}
+                      contentStyle={{
+                        backgroundColor: 'rgba(24, 24, 27, 0.95)',
+                        border: '1px solid rgba(63, 63, 70, 0.7)',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                      }}
+                      itemStyle={{ color: '#f4f4f5', fontFamily: 'Geist Mono, monospace' }}
+                      labelStyle={{ color: '#71717a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                     />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', color: '#a1a1aa' }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
                   No active spend to display.
                 </div>
               )}
             </div>
           </div>
 
-          {/* Mini Stats */}
-          <div className="grid grid-cols-2 gap-4">
-             <div className="bg-card border border-border p-4 rounded-xl">
-               <RotateCw className="w-5 h-5 text-muted-foreground mb-2" />
-               <p className="text-xs text-muted-foreground font-semibold uppercase">Recurring</p>
-               <p className="text-xl font-bold text-white">{stats.recurring_count}</p>
-             </div>
-             <div className="bg-card border border-border p-4 rounded-xl">
-               <CalendarDays className="w-5 h-5 text-muted-foreground mb-2" />
-               <p className="text-xs text-muted-foreground font-semibold uppercase">Annual Plans</p>
-               <p className="text-xl font-bold text-white">{stats.annual_count}</p>
-             </div>
-             <div className="bg-card border border-border p-4 rounded-xl">
-               <Wallet className="w-5 h-5 text-rose-500 mb-2" />
-               <p className="text-xs text-muted-foreground font-semibold uppercase">Highest Exp</p>
-               <p className="text-lg font-bold text-white">₹{stats.highest_monthly_expense}</p>
-             </div>
-             <div className="bg-card border border-border p-4 rounded-xl">
-               <Activity className="w-5 h-5 text-amber-500 mb-2" />
-               <p className="text-xs text-muted-foreground font-semibold uppercase">Max Leak</p>
-               <p className="text-lg font-bold text-white">{stats.highest_leak_score}</p>
-             </div>
+          <div className="border-t border-zinc-800/70 pt-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <RotateCw className="w-4 h-4 text-zinc-500" />
+                <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium pt-1">Recurring</p>
+                <p className="text-xl font-semibold text-zinc-100 font-mono tabular-nums">{stats.recurring_count}</p>
+              </div>
+              <div className="space-y-1">
+                <CalendarDays className="w-4 h-4 text-zinc-500" />
+                <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium pt-1">Annual Plans</p>
+                <p className="text-xl font-semibold text-zinc-100 font-mono tabular-nums">{stats.annual_count}</p>
+              </div>
+              <div className="space-y-1">
+                <Wallet className="w-4 h-4 text-rose-400" />
+                <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium pt-1">Highest Exp</p>
+                <p className="text-lg font-semibold text-zinc-100 font-mono tabular-nums">₹{stats.highest_monthly_expense}</p>
+              </div>
+              <div className="space-y-1">
+                <Activity className="w-4 h-4 text-amber-400" />
+                <p className="text-xs uppercase tracking-wide text-zinc-500 font-medium pt-1">Max Leak</p>
+                <p className="text-lg font-semibold text-zinc-100 font-mono tabular-nums">{stats.highest_leak_score}</p>
+              </div>
+            </div>
           </div>
-
         </div>
 
         {/* Subscriptions Grid */}
-        <div className="lg:col-span-2">
+        <div>
           <div className="flex justify-between items-center mb-4">
-             <h3 className="text-lg font-bold text-white">All Detected Subscriptions</h3>
+             <h3 className="text-base font-medium text-zinc-100">All Detected Subscriptions</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
             {subscriptions.map((sub, index) => (
               <SubscriptionCard
                 key={`${sub.merchant}-${index}`}
@@ -168,8 +196,8 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
               />
             ))}
             {subscriptions.length === 0 && (
-              <div className="col-span-2 bg-card border border-border rounded-xl p-12 text-center">
-                <p className="text-muted-foreground">No subscriptions detected in the provided data.</p>
+              <div className="col-span-2 bg-zinc-900/40 border border-zinc-800/70 rounded-lg p-12 text-center">
+                <p className="text-zinc-500 text-sm">No subscriptions detected in the provided data.</p>
               </div>
             )}
           </div>
