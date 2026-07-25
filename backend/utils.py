@@ -6,9 +6,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from groq import Groq
 
-# Use the same Groq client configuration as extract.py
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
+def get_groq_client():
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise Exception("GROQ_API_KEY environment variable is missing. Please add it to your Vercel Project Settings.")
+    return Groq(api_key=api_key)
 def sanitize_pii(text: str) -> dict:
     """Sanitizes PII from text before it hits the LLM."""
     items_redacted = 0
@@ -76,7 +78,7 @@ Return ONLY the raw JSON object. Do not include markdown formatting (like ```jso
     
     user_prompt = f"Please draft a cancellation email for '{service_name}'. My current plan is {frequency} and costs {amount}."
     
-    resp = client.chat.completions.create(
+    resp = get_groq_client().chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": system_prompt},
@@ -142,7 +144,7 @@ Example output format:
     
     user_prompt = f"Suggest 2 cheaper alternative plans for {service_name} which currently costs {current_price}."
     
-    resp = client.chat.completions.create(
+    resp = get_groq_client().chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": system_prompt},
@@ -184,7 +186,7 @@ Example output format:
     
     user_prompt = f"Analyze this timeline and return the enriched JSON with a shock_alert:\n{json.dumps(timeline_data)}"
     
-    resp = client.chat.completions.create(
+    resp = get_groq_client().chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": system_prompt},
@@ -224,7 +226,7 @@ Example format:
 }}
 """
     try:
-        resp = client.chat.completions.create(
+        resp = get_groq_client().chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "system", "content": system_prompt}],
             temperature=0.3,
@@ -263,7 +265,7 @@ Example format:
         messages.append({"role": role, "content": msg.get("text", "")})
         
     try:
-        resp = client.chat.completions.create(
+        resp = get_groq_client().chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=messages,
             temperature=0.7,

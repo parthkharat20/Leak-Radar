@@ -2,8 +2,11 @@ import os
 import json
 from groq import Groq
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
+def get_groq_client():
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise Exception("GROQ_API_KEY environment variable is missing. Please add it to your Vercel Project Settings.")
+    return Groq(api_key=api_key)
 SYSTEM_PROMPT = """You are a financial transaction parser. Given raw unstructured text \
 (bank statement lines, SMS alerts, or forwarded email text), extract every subscription transaction \
 as a JSON array. 
@@ -26,7 +29,7 @@ If a line isn't a subscription transaction, skip it."""
 
 
 def extract_transactions(raw_text: str, source_type: str = "bank_statement"):
-    resp = client.chat.completions.create(
+    resp = get_groq_client().chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
