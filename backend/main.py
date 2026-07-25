@@ -13,9 +13,6 @@ from detect import detect_subscriptions
 from score import score_subscriptions
 import io
 import csv
-import pdfplumber
-import pytesseract
-from PIL import Image
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 import models
@@ -180,10 +177,13 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(databa
 
     try:
         if filename.endswith(".pdf"):
+            import pdfplumber
             with pdfplumber.open(io.BytesIO(content)) as pdf:
                 raw_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
         
         elif filename.endswith((".png", ".jpg", ".jpeg")):
+            import pytesseract
+            from PIL import Image
             try:
                 img = Image.open(io.BytesIO(content))
                 raw_text = pytesseract.image_to_string(img)
