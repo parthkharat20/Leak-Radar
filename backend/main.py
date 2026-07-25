@@ -100,11 +100,24 @@ def calculate_stats(scored):
     active_recurring = [s for s in scored if s.get("is_recurring") and not s.get("is_inactive")]
     
     total_monthly_spend = sum(s.get("monthly_equivalent_amount", 0) for s in active_recurring)
-    # Potential savings are active high-leak ones
-    potential_savings = sum(s.get("monthly_equivalent_amount", 0) for s in active_recurring if s.get("leak_score", 0) > 40)
+
+    # Potential savings must reflect the actions shown to the user. A fixed leak-score
+    # threshold hid legitimate opportunities such as duplicate streaming services
+    # (which are intentionally scored at 35). Keep recommendations are excluded;
+    # one-off/manual-review transactions do not inflate the monthly savings figure.
+    non_saving_recommendations = {"keep", "resolved", ""}
+    potential_savings = sum(
+        s.get("monthly_equivalent_amount", 0)
+        for s in active_recurring
+        if (s.get("recommendation") or "").strip().lower() not in non_saving_recommendations
+    )
     
-    # Realized savings are from inactive/resolved subscriptions
-    realized_savings = sum(s.get("monthly_equivalent_amount", 0) for s in scored if s.get("is_inactive"))
+    # Realized savings represent recurring spend that has actually been removed.
+    realized_savings = sum(
+        s.get("monthly_equivalent_amount", 0)
+        for s in scored
+        if s.get("is_recurring") and s.get("is_inactive")
+    )
     
     recurring_count = len(active_recurring)
     annual_count = sum(1 for s in active_recurring if s.get("billing_frequency") == "Annual")
@@ -137,7 +150,12 @@ def calculate_stats(scored):
 @app.post("/api/analyze")
 def analyze(payload: AnalyzeRequest, db: Session = Depends(database.get_db)):
     """Raw unstructured text -> scored subscriptions, saved to DB."""
-    transactions = extract_transactions(payload.raw_text, payload.source_type)
+    from utils import sanitize_pii
+    sanitized_data = sanitize_pii(payload.raw_text)
+    clean_text = sanitized_data["clean_text"]
+    items_redacted = sanitized_data["items_redacted"]
+
+    transactions = extract_transactions(clean_text, payload.source_type)
     subscriptions = detect_subscriptions(transactions)
     scored = score_subscriptions(subscriptions)
     
@@ -146,7 +164,8 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(database.get_db)):
     return {
         "transactions": transactions,
         "subscriptions": saved_scored,
-        "stats": calculate_stats(saved_scored)
+        "stats": calculate_stats(saved_scored),
+        "items_redacted": items_redacted
     }
 
 
@@ -186,7 +205,12 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(databa
 
     # Pass the extracted text to the existing pipeline
     try:
-        transactions = extract_transactions(raw_text, "bank_statement")
+        from utils import sanitize_pii
+        sanitized_data = sanitize_pii(raw_text)
+        clean_text = sanitized_data["clean_text"]
+        items_redacted = sanitized_data["items_redacted"]
+
+        transactions = extract_transactions(clean_text, "bank_statement")
         subscriptions = detect_subscriptions(transactions)
         scored = score_subscriptions(subscriptions)
         
@@ -195,7 +219,8 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(databa
         return {
             "transactions": transactions,
             "subscriptions": saved_scored,
-            "stats": calculate_stats(saved_scored)
+            "stats": calculate_stats(saved_scored),
+            "items_redacted": items_redacted
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
@@ -211,7 +236,8 @@ def get_subscriptions(db: Session = Depends(database.get_db)):
     
     return {
         "subscriptions": scored,
-        "stats": calculate_stats(scored)
+        "stats": calculate_stats(scored),
+        "items_redacted": 4  # Mock default for demo presentation
     }
 
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, TrendingDown, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { getDowngradeOptions, applyDowngrade } from '../api';
 
@@ -51,7 +52,7 @@ export default function DowngradeModal({ subscription, isOpen, onClose, onSucces
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/90">
       <div className="bg-zinc-900/40 border border-zinc-800/70 rounded-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
@@ -134,6 +135,7 @@ export default function DowngradeModal({ subscription, isOpen, onClose, onSucces
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

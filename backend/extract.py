@@ -27,7 +27,7 @@ If a line isn't a subscription transaction, skip it."""
 
 def extract_transactions(raw_text: str, source_type: str = "bank_statement"):
     resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"source_type: {source_type}\n\n{raw_text}"},

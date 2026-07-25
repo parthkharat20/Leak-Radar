@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Send, Loader2, Bot, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { draftCancellationEmail, sendCancellationEmail } from '../api';
 import { cn } from '../lib/utils';
@@ -58,7 +59,7 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/90">
       <div className="bg-zinc-900/40 border border-zinc-800/70 rounded-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
@@ -176,6 +177,7 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
         )}
         
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

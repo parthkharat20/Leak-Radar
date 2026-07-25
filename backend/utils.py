@@ -1,12 +1,65 @@
 import os
 import smtplib
 import json
+import re
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from groq import Groq
 
 # Use the same Groq client configuration as extract.py
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+def sanitize_pii(text: str) -> dict:
+    """Sanitizes PII from text before it hits the LLM."""
+    items_redacted = 0
+    clean_text = text
+
+    # PAN Cards (Indian format: 5 letters, 4 digits, 1 letter)
+    pan_pattern = r'\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b'
+    pan_matches = re.findall(pan_pattern, clean_text)
+    items_redacted += len(pan_matches)
+    clean_text = re.sub(pan_pattern, '[PAN-REDACTED]', clean_text)
+
+    # Credit/Debit Cards (13-16 digits with optional spaces/dashes)
+    # We use a pattern that requires at least a few groups to avoid capturing simple amounts
+    card_pattern = r'\b(?:\d[ -]*?){13,16}\b'
+    # To be safer against capturing large currency amounts, let's look for explicit card patterns like 4 blocks of 4
+    card_pattern_safe = r'\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}\b'
+    card_matches = re.findall(card_pattern_safe, clean_text)
+    items_redacted += len(card_matches)
+    clean_text = re.sub(card_pattern_safe, '[CARD-REDACTED]', clean_text)
+
+    # Account Numbers (usually 9-18 digits, we'll prefix with 'Acct' or 'Account' to be safe)
+    acct_pattern = r'\b(?:Acct|Account|A/C|A/c)[. :]*\d{9,18}\b'
+    acct_matches = re.findall(acct_pattern, clean_text, re.IGNORECASE)
+    items_redacted += len(acct_matches)
+    clean_text = re.sub(acct_pattern, '[ACCT-REDACTED]', clean_text, flags=re.IGNORECASE)
+    
+    # Phone Numbers (basic international or local formats, e.g., +91-9876543210 or 9876543210)
+    phone_pattern = r'\b(?:\+?91[\-\s]?)?[6789]\d{9}\b'
+    phone_matches = re.findall(phone_pattern, clean_text)
+    items_redacted += len(phone_matches)
+    clean_text = re.sub(phone_pattern, '[PHONE-REDACTED]', clean_text)
+
+    # Emails (exclude common merchants)
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    whitelisted_domains = ['netflix.com', 'spotify.com', 'adobe.com', 'amazon.com', 'apple.com', 'google.com', 'makemytrip.com']
+    
+    def email_replacer(match):
+        email = match.group(0)
+        domain = email.split('@')[-1].lower()
+        if domain in whitelisted_domains:
+            return email
+        nonlocal items_redacted
+        items_redacted += 1
+        return '[EMAIL-REDACTED]'
+
+    clean_text = re.sub(email_pattern, email_replacer, clean_text)
+
+    return {
+        "clean_text": clean_text,
+        "items_redacted": items_redacted
+    }
 
 def draft_cancellation_email(service_name: str, amount: float, frequency: str) -> dict:
     """Uses Groq to draft a formal cancellation email returning JSON."""
@@ -24,7 +77,7 @@ Return ONLY the raw JSON object. Do not include markdown formatting (like ```jso
     user_prompt = f"Please draft a cancellation email for '{service_name}'. My current plan is {frequency} and costs {amount}."
     
     resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -90,7 +143,7 @@ Example output format:
     user_prompt = f"Suggest 2 cheaper alternative plans for {service_name} which currently costs {current_price}."
     
     resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -132,7 +185,7 @@ Example output format:
     user_prompt = f"Analyze this timeline and return the enriched JSON with a shock_alert:\n{json.dumps(timeline_data)}"
     
     resp = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -172,7 +225,7 @@ Example format:
 """
     try:
         resp = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[{"role": "system", "content": system_prompt}],
             temperature=0.3,
             response_format={"type": "json_object"}
@@ -211,7 +264,7 @@ Example format:
         
     try:
         resp = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=messages,
             temperature=0.7,
             response_format={"type": "json_object"}

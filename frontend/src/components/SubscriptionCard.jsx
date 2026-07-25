@@ -57,67 +57,45 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
   const BrandIcon = brand?.Icon;
   const initials = getServiceInitials(merchant);
   const primaryAction = getPrimaryActionKey(recommendation);
-  const borderAccent = getRecommendationBorderClass(recommendation);
 
-  const getActionColor = (action) => {
-    switch (action) {
-      case 'Cancel':
-      case 'Cancel Immediately':
-        return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-      case 'Review Plan':
-      case 'Review':
-      case 'Needs Manual Review':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      case 'Downgrade':
-      case 'Downgrade / Consolidate':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      case 'Switch to Annual':
-        return 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
-      case 'Consolidate Streaming Services':
-      case 'Keep only one storage provider':
-        return 'bg-violet-500/10 text-violet-400 border-violet-500/20';
-      case 'Keep':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      default:
-        return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
+  const getTheme = (score) => {
+    if (score > 60) return 'rose';
+    if (score > 20) return 'amber';
+    return 'emerald';
+  };
+  const theme = getTheme(leak_score || 0);
+
+  const THEMES = {
+    rose: {
+      text: 'text-rose-400',
+      stroke: 'stroke-rose-400',
+      bgGlow: 'from-rose-500/40 via-rose-500/10',
+      badge: 'bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]',
+      primaryBtn: 'bg-gradient-to-b from-rose-500/20 to-rose-500/5 border border-rose-500/30 text-rose-400 hover:from-rose-500/30 hover:to-rose-500/10 hover:border-rose-400/50 hover:shadow-[0_0_25px_rgba(244,63,94,0.3)] hover:-translate-y-0.5',
+      secondaryBtn: 'hover:border-rose-700 hover:bg-rose-900/30 hover:text-rose-100 hover:shadow-[0_0_15px_rgba(244,63,94,0.15)] focus-visible:ring-rose-400',
+      blur: 'bg-rose-500/[0.03] group-hover:bg-rose-500/[0.06]'
+    },
+    amber: {
+      text: 'text-amber-400',
+      stroke: 'stroke-amber-400',
+      bgGlow: 'from-amber-500/40 via-amber-500/10',
+      badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.15)]',
+      primaryBtn: 'bg-gradient-to-b from-amber-500/20 to-amber-500/5 border border-amber-500/30 text-amber-400 hover:from-amber-500/30 hover:to-amber-500/10 hover:border-amber-400/50 hover:shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:-translate-y-0.5',
+      secondaryBtn: 'hover:border-amber-700 hover:bg-amber-900/30 hover:text-amber-100 hover:shadow-[0_0_15px_rgba(245,158,11,0.15)] focus-visible:ring-amber-400',
+      blur: 'bg-amber-500/[0.03] group-hover:bg-amber-500/[0.06]'
+    },
+    emerald: {
+      text: 'text-emerald-400',
+      stroke: 'stroke-emerald-400',
+      bgGlow: 'from-emerald-500/40 via-emerald-500/10',
+      badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]',
+      primaryBtn: 'bg-gradient-to-b from-emerald-500/20 to-emerald-500/5 border border-emerald-500/30 text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-500/10 hover:border-emerald-400/50 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] hover:-translate-y-0.5',
+      secondaryBtn: 'hover:border-emerald-700 hover:bg-emerald-900/30 hover:text-emerald-100 hover:shadow-[0_0_15px_rgba(16,185,129,0.15)] focus-visible:ring-emerald-400',
+      blur: 'bg-emerald-500/[0.03] group-hover:bg-emerald-500/[0.06]'
     }
   };
 
-  const getActionIcon = (action) => {
-    switch (action) {
-      case 'Cancel':
-      case 'Cancel Immediately':
-        return <AlertCircle className="w-3.5 h-3.5" />;
-      case 'Review Plan':
-      case 'Review':
-      case 'Needs Manual Review':
-        return <Info className="w-3.5 h-3.5" />;
-      case 'Downgrade':
-      case 'Downgrade / Consolidate':
-        return <Tag className="w-3.5 h-3.5" />;
-      case 'Switch to Annual':
-        return <RefreshCcw className="w-3.5 h-3.5" />;
-      case 'Consolidate Streaming Services':
-      case 'Keep only one storage provider':
-        return <Layers className="w-3.5 h-3.5" />;
-      case 'Keep':
-        return <CheckCircle2 className="w-3.5 h-3.5" />;
-      default:
-        return <Sparkles className="w-3.5 h-3.5" />;
-    }
-  };
-
-  const getLeakScoreColor = (score) => {
-    if (score > 60) return 'text-rose-400 stroke-rose-400';
-    if (score > 20) return 'text-amber-400 stroke-amber-400';
-    return 'text-emerald-400 stroke-emerald-400';
-  };
-
-  const primaryButtonClass = {
-    cancel: 'bg-rose-500/90 text-white hover:bg-rose-500',
-    downgrade: 'bg-amber-500/90 text-white hover:bg-amber-500',
-    negotiate: 'bg-indigo-500/90 text-white hover:bg-indigo-500',
-  };
+  const t = THEMES[theme];
 
   const actions = [
     { key: 'cancel', label: 'Cancel', open: () => setIsModalOpen(true) },
@@ -138,44 +116,48 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
 
   return (
     <div className={cn(
-      "bg-zinc-900/40 border border-zinc-800/70 hover:border-zinc-700/80 border-l-[3px] transition-colors duration-150 p-5 rounded-lg relative overflow-hidden flex flex-col justify-between",
-      borderAccent,
-      is_inactive && "opacity-75 grayscale-[0.5]"
+      "group relative flex min-h-[360px] md:min-h-0 flex-col lg:flex-row gap-6 justify-between overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6 backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-zinc-700 hover:bg-zinc-800/80 hover:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.8)]",
+      is_inactive && "opacity-75 grayscale-[0.4]"
     )}>
-      <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-zinc-800/60 border border-zinc-700/50 flex items-center justify-center shrink-0">
+      <div className={cn("absolute inset-x-0 top-0 h-px bg-gradient-to-r to-transparent opacity-80 animate-pulse duration-[3000ms]", t.bgGlow)} />
+      <div className={cn("hidden lg:block absolute inset-y-0 left-0 w-px bg-gradient-to-b to-transparent opacity-80", t.bgGlow)} />
+      <div className={cn("pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full blur-3xl transition-colors duration-500", t.blur)} />
+      
+      {/* Left Column (Brand & Score) */}
+      <div className="relative z-10 flex items-start justify-between lg:flex-col lg:w-[260px] lg:shrink-0 lg:border-r lg:border-zinc-800/60 lg:pr-6 lg:mb-0 mb-5">
+        <div className="flex items-start gap-4 min-w-0">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 shadow-inner shadow-black/40">
             {BrandIcon ? (
-              <BrandIcon className="w-4 h-4" style={{ color: brand.color }} />
+              <BrandIcon className="h-6 w-6" style={{ color: brand.color }} />
             ) : (
-              <span className="text-xs font-semibold font-mono text-zinc-400">{initials}</span>
+              <span className="text-sm font-bold font-mono text-zinc-300">{initials}</span>
             )}
           </div>
 
           <div className="min-w-0">
-            <h3 className="text-base font-medium text-zinc-100 mb-1 flex flex-wrap items-center gap-2">
+            <h3 className="mb-1.5 flex flex-wrap items-center gap-2 text-lg font-bold tracking-tight text-zinc-50">
               <span className="truncate">{merchant}</span>
-              <span className="text-[10px] uppercase tracking-wide bg-zinc-900/60 text-zinc-400 border border-zinc-800/70 px-2 py-0.5 rounded-full font-medium shrink-0">
+              <span className="shrink-0 rounded-full border border-zinc-700/60 bg-zinc-800/50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-300">
                 {billing_frequency}
               </span>
               {subscription.appears_unused && (
-                <span className="text-[10px] uppercase tracking-wide bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shrink-0">
-                  <AlertTriangle className="w-3 h-3" />
+                <span className={cn("text-[11px] uppercase tracking-wide px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5 shrink-0 animate-pulse", t.badge)}>
+                  <AlertTriangle className="w-3.5 h-3.5" />
                   Appears Unused
                 </span>
               )}
             </h3>
-            <span className="text-xs uppercase tracking-wide text-zinc-500 font-medium">
+            <span className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">
               {category}
             </span>
           </div>
         </div>
 
-        <div className="relative flex items-center justify-center w-14 h-14 shrink-0">
+        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-zinc-800/80 bg-zinc-950/60 p-0.5 lg:mt-auto">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 60 60">
             <circle className="text-zinc-800 stroke-current" strokeWidth="4" fill="transparent" r={radius} cx="30" cy="30" />
             <circle
-              className={cn(getLeakScoreColor(leak_score))}
+              className={cn("transition-all duration-1000 ease-out", t.stroke)}
               strokeWidth="4"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
@@ -192,25 +174,26 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
         </div>
       </div>
 
-      <div className="space-y-4 relative z-10 flex-1 flex flex-col justify-end">
-        <div className="flex items-end justify-between gap-2">
+      {/* Right Column (Details & Actions) */}
+      <div className="relative z-10 flex flex-1 flex-col justify-between space-y-5 lg:pl-2 lg:space-y-0">
+        <div className="flex items-end justify-between gap-4 lg:mb-5">
           <div>
-            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-1">Latest Amount</p>
-            <p className="text-2xl font-semibold text-zinc-100 font-mono tabular-nums">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Latest amount</p>
+            <p className="text-3xl font-bold tracking-tight text-white font-mono tabular-nums">
               ₹{latest_amount?.toLocaleString('en-IN')}
             </p>
           </div>
 
           <div className="text-right">
             {renewal_date && (
-              <div className="flex items-center gap-1.5 text-xs text-zinc-500 justify-end mb-1 font-mono tabular-nums">
-                <Calendar className="w-3.5 h-3.5" />
+              <div className="mb-1.5 flex items-center justify-end gap-1.5 text-sm text-zinc-400 font-mono tabular-nums">
+                <Calendar className="w-4 h-4" />
                 Renews {renewal_date}
               </div>
             )}
             {price_hike_pct > 0 && (
-              <div className="flex items-center gap-1 bg-rose-500/10 text-rose-400 px-2 py-1 rounded-md text-[11px] font-medium border border-rose-500/20">
-                <ArrowUpRight className="w-3 h-3 shrink-0" />
+              <div className={cn("flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold", t.badge)}>
+                <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
                 <span className="font-mono tabular-nums">
                   {merchant}: ₹{(latest_amount - subscription.price_hike_amount).toLocaleString('en-IN')} → ₹{latest_amount?.toLocaleString('en-IN')} (+{price_hike_pct}%)
                 </span>
@@ -219,40 +202,40 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
           </div>
         </div>
 
-        <div className="rounded-lg p-3 border border-zinc-800/70 bg-[#09090b]/50 space-y-2">
+        <div className="grid lg:grid-cols-2 gap-5 items-end">
+          <div className="space-y-3 rounded-xl border border-zinc-700/70 bg-zinc-950/60 p-4 shadow-inner shadow-black/50 transition-all duration-300 hover:border-zinc-600/80">
           <div className="flex items-center justify-between gap-2">
             <div className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border shrink-0",
-              getActionColor(recommendation)
+              "flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold shadow-sm transition-transform hover:scale-105",
+              t.badge
             )}>
-              {getActionIcon(recommendation)}
               {recommendation}
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              {confidence_score < 60 && <ShieldAlert className="w-3 h-3 text-amber-400" />}
+            <div className="flex items-center gap-2 shrink-0">
+              {confidence_score < 60 && <ShieldAlert className={cn("w-4 h-4 animate-pulse", t.text)} />}
               <ConfidenceMeter score={confidence_score} />
             </div>
           </div>
 
           {recommendation_reason && (
-            <details className="group text-xs text-zinc-400">
+          <details className="group text-sm text-zinc-400">
               <summary className="cursor-pointer list-none leading-relaxed [&::-webkit-details-marker]:hidden">
-                <span className="text-zinc-500">{truncateWords(recommendation_reason)}</span>{' '}
-                <span className="text-sky-400 group-open:hidden">Why?</span>
+                <span className="text-zinc-400 font-medium">{truncateWords(recommendation_reason)}</span>{' '}
+                <span className="text-cyan-400 font-semibold group-open:hidden hover:text-cyan-300">Why?</span>
               </summary>
-              <p className="mt-2 leading-relaxed text-zinc-400">{recommendation_reason}</p>
+              <p className="mt-2.5 leading-relaxed text-zinc-300">{recommendation_reason}</p>
             </details>
           )}
         </div>
 
-        <div className="pt-3 border-t border-zinc-800/70 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-center gap-2.5 lg:justify-end border-t border-zinc-700/60 pt-5 lg:border-t-0 lg:pt-0">
           {primary && (
             <button
               onClick={() => handleAction(primary.open)}
               className={cn(
-                "rounded-full px-5 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400",
-                primaryButtonClass[primary.key],
+                "rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                t.primaryBtn,
                 is_inactive && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -260,13 +243,14 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
             </button>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {secondaries.map((action) => (
               <button
                 key={action.key}
                 onClick={() => handleAction(action.open)}
                 className={cn(
-                  "text-zinc-500 hover:text-zinc-300 text-xs underline-offset-2 hover:underline transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded",
+                  "rounded-full border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 shadow-sm",
+                  t.secondaryBtn,
                   is_inactive && "opacity-50 cursor-not-allowed"
                 )}
               >
@@ -274,6 +258,7 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
               </button>
             ))}
           </div>
+        </div>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MessageSquare, FileText, Send, CheckCircle2, Loader2, Copy } from 'lucide-react';
 import { getNegotiationPlaybook, sendNegotiationMessage } from '../api';
 
@@ -87,7 +88,7 @@ export default function NegotiateModal({ subscription, isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/90">
       <div className="bg-zinc-900/40 border border-zinc-800/70 rounded-lg w-full max-w-2xl overflow-hidden flex flex-col h-[80vh]">
         
@@ -226,6 +227,7 @@ export default function NegotiateModal({ subscription, isOpen, onClose }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
