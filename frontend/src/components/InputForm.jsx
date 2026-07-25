@@ -21,7 +21,7 @@ const FORMAT_CHIPS = [
   { label: 'PNG', icon: Image },
 ];
 
-export default function InputForm({ onAnalyze, onUpload, isLoading }) {
+export default function InputForm({ onAnalyze, onUpload, isLoading, embedded = false }) {
   const [showManualInput, setShowManualInput] = useState(false);
   const [rawText, setRawText] = useState('');
   const [sourceType, setSourceType] = useState('bank_statement');
@@ -60,8 +60,8 @@ export default function InputForm({ onAnalyze, onUpload, isLoading }) {
   const tickerTrack = [...TICKER_ITEMS, ...TICKER_ITEMS];
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto">
-      {!showManualInput && (
+    <div className={cn("relative w-full", embedded ? "max-w-none mx-0" : "max-w-4xl mx-auto")}>
+      {!embedded && !showManualInput && (
         <div
           className="absolute inset-x-0 top-[38%] -translate-y-1/2 overflow-hidden pointer-events-none select-none opacity-[0.05]"
           aria-hidden="true"
@@ -79,40 +79,42 @@ export default function InputForm({ onAnalyze, onUpload, isLoading }) {
         </div>
       )}
 
-      <div className="relative space-y-8">
-        <div className="text-center space-y-4 mb-10">
-          <div className="flex items-center justify-center gap-3 animate-fade-rise">
-            <div className="relative flex items-center justify-center w-14 h-14">
-              <span
-                className="absolute inset-0 rounded-full border border-sky-400/40 animate-radar-ping motion-reduce:animate-none"
-                style={{ animationDelay: '0s' }}
-                aria-hidden="true"
-              />
-              <span
-                className="absolute inset-0 rounded-full border border-sky-400/40 animate-radar-ping motion-reduce:animate-none"
-                style={{ animationDelay: '1.3s' }}
-                aria-hidden="true"
-              />
-              <span
-                className="absolute inset-0 rounded-full border border-sky-400/40 animate-radar-ping motion-reduce:animate-none"
-                style={{ animationDelay: '2.6s' }}
-                aria-hidden="true"
-              />
-              <div className="relative p-2.5 rounded-lg bg-zinc-900/40 border border-zinc-800/70">
-                <Radar className="w-7 h-7 text-sky-400" />
+      <div className={cn("relative", embedded ? "space-y-5" : "space-y-8")}>
+        {!embedded && (
+          <div className="text-center space-y-4 mb-10">
+            <div className="flex items-center justify-center gap-3 animate-fade-rise">
+              <div className="relative flex items-center justify-center w-14 h-14">
+                <span
+                  className="absolute inset-0 rounded-full border border-sky-400/40 animate-radar-ping motion-reduce:animate-none"
+                  style={{ animationDelay: '0s' }}
+                  aria-hidden="true"
+                />
+                <span
+                  className="absolute inset-0 rounded-full border border-sky-400/40 animate-radar-ping motion-reduce:animate-none"
+                  style={{ animationDelay: '1.3s' }}
+                  aria-hidden="true"
+                />
+                <span
+                  className="absolute inset-0 rounded-full border border-sky-400/40 animate-radar-ping motion-reduce:animate-none"
+                  style={{ animationDelay: '2.6s' }}
+                  aria-hidden="true"
+                />
+                <div className="relative p-2.5 rounded-lg bg-zinc-900/40 border border-zinc-800/70">
+                  <Radar className="w-7 h-7 text-sky-400" />
+                </div>
               </div>
+              <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-zinc-100">
+                LeakRadar
+              </h1>
             </div>
-            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-zinc-100">
-              LeakRadar
-            </h1>
+            <p className="text-zinc-400 text-base md:text-lg max-w-xl mx-auto leading-relaxed animate-fade-rise-delay-1">
+              Drop your bank statement, SMS alerts, or receipts — we&apos;ll surface every recurring charge and show you what to cut.
+            </p>
           </div>
-          <p className="text-zinc-400 text-base md:text-lg max-w-xl mx-auto leading-relaxed animate-fade-rise-delay-1">
-            Drop your bank statement, SMS alerts, or receipts — we&apos;ll surface every recurring charge and show you what to cut.
-          </p>
-        </div>
+        )}
 
         {!showManualInput ? (
-          <div className="space-y-5 animate-fade-rise-delay-2">
+          <div className={cn("space-y-5", !embedded && "animate-fade-rise-delay-2")}>
             <div className="relative rounded-lg">
               {!isLoading && (
                 <div

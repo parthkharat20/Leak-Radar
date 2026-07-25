@@ -91,6 +91,10 @@
     opacity: 0.9;
   }
 
+  .view-transition {
+    animation: fade-rise 400ms ease-out both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-radar-sweep,
     .animate-radar-ping,
@@ -99,7 +103,8 @@
     .animate-fade-rise-delay-2,
     .animate-marquee,
     .animate-border-shimmer,
-    .animate-border-shimmer-active {
+    .animate-border-shimmer-active,
+    .view-transition {
       animation: none;
     }
   }

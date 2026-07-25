@@ -37,7 +37,7 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
           onClick={onReset}
           className="px-4 py-2 text-sm font-medium text-zinc-400 bg-zinc-900/40 hover:text-zinc-100 hover:border-zinc-700/80 rounded-full transition-colors duration-150 border border-zinc-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
         >
-          Analyze Another File
+          Back to Overview
         </button>
       </div>
 
