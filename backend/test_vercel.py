@@ -11,4 +11,4 @@ except Exception as e:
     @app.post("/{path:path}")
     @app.patch("/{path:path}")
     def catch_all(path: str):
-        return JSONResponse(status_code=500, content={"error": error_detail})
+        return JSONResponse(status_code=500, content={"detail": error_detail})
