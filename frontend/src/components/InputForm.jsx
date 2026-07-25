@@ -34,7 +34,8 @@ export default function InputForm({ onAnalyze, onUpload, isLoading, embedded = f
         await onUpload(acceptedFiles[0]);
       } catch (err) {
         console.error("File processing error:", err);
-        setErrorMessage("Error processing file. Please ensure it is a valid CSV/PDF or try pasting text manually.");
+        const detail = err?.response?.data?.detail || err.message || "Error processing file. Please ensure it is a valid CSV/PDF or try pasting text manually.";
+        setErrorMessage(detail);
       }
     }
   }, [onUpload]);
