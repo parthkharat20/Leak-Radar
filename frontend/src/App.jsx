@@ -26,6 +26,23 @@ function App() {
     }
   };
 
+  const handleUpload = async (file) => {
+    setLoading(true);
+    setError(null);
+    setInactiveMerchants([]);
+    
+    try {
+      const { uploadFile } = await import('./api');
+      const result = await uploadFile(file);
+      setAnalysisResult(result);
+    } catch (err) {
+      console.error(err);
+      setError(err?.response?.data?.detail || err.message || 'An error occurred while uploading the file.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleToggleInactive = async (merchant) => {
     if (!analysisResult) return;
     
@@ -41,11 +58,7 @@ function App() {
       setAnalysisResult(prev => ({
         ...prev,
         subscriptions: result.subscriptions,
-        // The backend doesn't recalculate total_monthly_leak in /api/rescore (Wait, does it? Let's assume it only returns subscriptions based on the prompt/code).
-        // Let's recalculate it locally or assume backend does.
-        total_monthly_leak: result.subscriptions
-          .filter(s => s.leak_score > 50)
-          .reduce((sum, s) => sum + s.latest_amount, 0)
+        stats: result.stats
       }));
     } catch (err) {
       console.error("Failed to rescore", err);
@@ -74,7 +87,7 @@ function App() {
       )}
 
       {!analysisResult ? (
-        <InputForm onAnalyze={handleAnalyze} isLoading={loading} />
+        <InputForm onAnalyze={handleAnalyze} onUpload={handleUpload} isLoading={loading} />
       ) : (
         <Dashboard 
           analysisResult={analysisResult} 

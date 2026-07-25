@@ -1,24 +1,22 @@
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { AlertTriangle, TrendingDown } from 'lucide-react';
+import { AlertTriangle, TrendingDown, IndianRupee, RotateCw, Activity, CalendarDays, Wallet } from 'lucide-react';
 import SubscriptionCard from './SubscriptionCard';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b'];
 
 export default function Dashboard({ analysisResult, inactiveMerchants, onToggleInactive, onReset }) {
-  const { subscriptions, total_monthly_leak } = analysisResult;
+  const { subscriptions, stats } = analysisResult;
 
   const categoryData = useMemo(() => {
     const totals = {};
     subscriptions.forEach(sub => {
-      // only count active subs for the chart if we want to reflect current spend, 
-      // but let's just show everything or filter based on inactiveMerchants
-      if (!inactiveMerchants.includes(sub.merchant)) {
-        totals[sub.category] = (totals[sub.category] || 0) + sub.latest_amount;
+      if (sub.is_recurring && !inactiveMerchants.includes(sub.merchant)) {
+        totals[sub.category] = (totals[sub.category] || 0) + (sub.monthly_equivalent_amount || 0);
       }
     });
     return Object.entries(totals)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name, value: Math.round(value) }))
       .sort((a, b) => b.value - a.value);
   }, [subscriptions, inactiveMerchants]);
 
@@ -28,7 +26,7 @@ export default function Dashboard({ analysisResult, inactiveMerchants, onToggleI
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight">Analysis Complete</h2>
           <p className="text-muted-foreground mt-1">
-            We found {subscriptions.length} subscriptions in your data.
+            We found {subscriptions.length} transactions, tracking {stats.recurring_count} active subscriptions.
           </p>
         </div>
         <button
@@ -39,32 +37,57 @@ export default function Dashboard({ analysisResult, inactiveMerchants, onToggleI
         </button>
       </div>
 
+      {/* Top Level Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        
+        {/* HUGE Leak Score Card */}
+        <div className="col-span-1 md:col-span-3 lg:col-span-2 bg-gradient-to-br from-rose-500/20 via-rose-500/10 to-transparent border border-rose-500/30 p-6 rounded-2xl relative overflow-hidden flex flex-col justify-center">
+          <h3 className="text-sm font-semibold text-rose-500/80 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <Activity className="w-4 h-4" /> Overall Leak Score
+          </h3>
+          <div className="text-6xl font-extrabold text-rose-500 tracking-tighter">
+            {stats.overall_leak_score || 0}<span className="text-2xl text-rose-500/50">/100</span>
+          </div>
+          <p className="text-sm text-rose-500/80 mt-2 font-medium">Higher score = more money being wasted.</p>
+        </div>
+
+        <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-primary/10 border border-primary/20 p-5 rounded-2xl flex flex-col justify-center">
+          <h3 className="text-xs font-semibold text-primary/80 uppercase tracking-wider mb-1">
+            Total Monthly Spend
+          </h3>
+          <div className="text-3xl font-extrabold text-primary flex items-baseline gap-1">
+            ₹{stats.total_monthly_spend?.toLocaleString('en-IN')} <span className="text-xs font-medium opacity-70">/mo</span>
+          </div>
+        </div>
+
+        <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-2xl flex flex-col justify-center">
+          <h3 className="text-xs font-semibold text-emerald-500/80 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <TrendingDown className="w-3 h-3" /> Potential Savings
+          </h3>
+          <div className="text-3xl font-extrabold text-emerald-500">
+            ₹{stats.potential_savings?.toLocaleString('en-IN')}
+          </div>
+        </div>
+
+        <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-card border border-border p-5 rounded-2xl flex flex-col justify-center">
+           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+            Avg Monthly Cost
+          </h3>
+          <div className="text-3xl font-bold text-white">
+            ₹{stats.average_monthly_cost?.toLocaleString('en-IN')}
+          </div>
+        </div>
+
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Top Level Stats */}
-        <div className="lg:col-span-1 space-y-8">
-          <div className="bg-card border border-border p-6 rounded-2xl shadow-lg relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              <AlertTriangle className="w-24 h-24 text-rose-500" />
-            </div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Total Monthly Leak
-            </h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-extrabold text-white">
-                ₹{total_monthly_leak.toLocaleString('en-IN')}
-              </span>
-              <span className="text-muted-foreground">/mo</span>
-            </div>
-            <p className="text-sm text-rose-400 mt-4 font-medium flex items-center gap-1">
-              <TrendingDown className="w-4 h-4" />
-              Potential savings if action taken
-            </p>
-          </div>
-
+        {/* Sidebar Stats & Charts */}
+        <div className="lg:col-span-1 space-y-6">
+          
           <div className="bg-card border border-border p-6 rounded-2xl shadow-lg">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
-              Active Spend by Category
+              Spend by Category (Monthly)
             </h3>
             <div className="h-[250px] w-full">
               {categoryData.length > 0 ? (
@@ -99,10 +122,38 @@ export default function Dashboard({ analysisResult, inactiveMerchants, onToggleI
               )}
             </div>
           </div>
+
+          {/* Mini Stats */}
+          <div className="grid grid-cols-2 gap-4">
+             <div className="bg-card border border-border p-4 rounded-xl">
+               <RotateCw className="w-5 h-5 text-muted-foreground mb-2" />
+               <p className="text-xs text-muted-foreground font-semibold uppercase">Recurring</p>
+               <p className="text-xl font-bold text-white">{stats.recurring_count}</p>
+             </div>
+             <div className="bg-card border border-border p-4 rounded-xl">
+               <CalendarDays className="w-5 h-5 text-muted-foreground mb-2" />
+               <p className="text-xs text-muted-foreground font-semibold uppercase">Annual Plans</p>
+               <p className="text-xl font-bold text-white">{stats.annual_count}</p>
+             </div>
+             <div className="bg-card border border-border p-4 rounded-xl">
+               <Wallet className="w-5 h-5 text-rose-500 mb-2" />
+               <p className="text-xs text-muted-foreground font-semibold uppercase">Highest Exp</p>
+               <p className="text-lg font-bold text-white">₹{stats.highest_monthly_expense}</p>
+             </div>
+             <div className="bg-card border border-border p-4 rounded-xl">
+               <Activity className="w-5 h-5 text-amber-500 mb-2" />
+               <p className="text-xs text-muted-foreground font-semibold uppercase">Max Leak</p>
+               <p className="text-lg font-bold text-white">{stats.highest_leak_score}</p>
+             </div>
+          </div>
+
         </div>
 
         {/* Subscriptions Grid */}
         <div className="lg:col-span-2">
+          <div className="flex justify-between items-center mb-4">
+             <h3 className="text-lg font-bold text-white">All Detected Subscriptions</h3>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {subscriptions.map(sub => (
               <SubscriptionCard

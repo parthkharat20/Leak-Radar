@@ -5,20 +5,24 @@ from groq import Groq
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 SYSTEM_PROMPT = """You are a financial transaction parser. Given raw unstructured text \
-(bank statement lines, SMS alerts, or forwarded email text), extract every transaction \
-as a JSON array. For each transaction return:
-- date (YYYY-MM-DD). Source dates may be DD-MM-YYYY (e.g. 01-02-2026 = 1 Feb 2026) or \
-DD-Mon-YY (e.g. 01-Jun-26). Convert correctly to ISO YYYY-MM-DD — never just reorder \
-the digits. Example: 01-02-2026 -> 2026-02-01.
-- merchant_raw (exactly as it appears in the source)
-- merchant_normalized (clean brand name, e.g. "NETFLIX.COM 8019273" -> "Netflix")
+(bank statement lines, SMS alerts, or forwarded email text), extract every subscription transaction \
+as a JSON array. 
+
+CRITICAL: DO NOT extract one-time expenses or non-subscriptions. IGNORE Uber, Swiggy, Zomato, Restaurant, Fuel, Medical, ATM Withdrawal, Shopping, and UPI transfers.
+
+For each transaction return:
+- date (YYYY-MM-DD). Convert correctly to ISO YYYY-MM-DD. Example: 01-02-2026 -> 2026-02-01.
+- service_name (clean brand name, e.g., Netflix, Prime Video, Google One)
 - amount (number, no currency symbol)
 - currency (ISO code, default INR)
-- category (one of: streaming, saas, fitness, insurance, utilities, food_delivery, other)
-- source_type (bank_statement | sms | email)
+- category (classify correctly into one of: Streaming, Music, Cloud Storage, Productivity, AI, Developer Tools, Design, Utility, Other)
+- billing_frequency (look for "Monthly", "Billed Monthly", "Monthly Plan", "Renews Every Month", "Auto Renewal", "Next Billing Date" and map to "Monthly". Look for "Annual", "Yearly", "Renews Every Year", "Annual Membership" and map to "Annual". Otherwise return "Unknown")
+- next_billing_date (YYYY-MM-DD if explicitly mentioned in text, else null)
+
+DO NOT extract one-off purchases, rides, food delivery, or utility bills (e.g., Uber, Ola, Swiggy, Zomato, ATM, UPI transfers, shopping, electricity, fuel, groceries, medicine, restaurant bills). Only recurring services should survive extraction.
 
 Return ONLY a valid JSON array. No markdown, no explanation, no preamble.
-If a line isn't a transaction, skip it."""
+If a line isn't a subscription transaction, skip it."""
 
 
 def extract_transactions(raw_text: str, source_type: str = "bank_statement"):
