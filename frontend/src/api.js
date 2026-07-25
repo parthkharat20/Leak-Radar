@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = '/api';
 
 export const analyzeText = async (raw_text, source_type = 'bank_statement') => {
   const response = await axios.post(`${API_BASE_URL}/analyze`, {
