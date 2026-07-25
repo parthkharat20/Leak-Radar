@@ -125,10 +125,12 @@ def calculate_stats(scored):
     
     highest_monthly_expense = max([s.get("monthly_equivalent_amount", 0) for s in active_recurring] or [0])
     
-    # Leak score is only based on active subscriptions
+    # Leak score is only based on active subscriptions for the max score
     active_all = [s for s in scored if not s.get("is_inactive")]
     highest_leak_score = max([s.get("leak_score", 0) for s in active_all] or [0])
-    overall_leak_score = int(sum(s.get("leak_score", 0) for s in active_all) / len(active_all)) if active_all else 0
+    
+    # Overall leak score should be based on ALL subscriptions so that resolving/canceling (which drops leak_score to 0) decreases the average.
+    overall_leak_score = int(sum(s.get("leak_score", 0) for s in scored) / len(scored)) if scored else 0
     
     upcoming_renewals = [s for s in active_all if s.get("renewal_date")]
     upcoming_renewals = sorted(upcoming_renewals, key=lambda x: x["renewal_date"])[:3]
@@ -232,7 +234,7 @@ def get_subscriptions(db: Session = Depends(database.get_db)):
     demo_user_id = 1
     db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
     
-    scored = [{**record.raw_data, "id": record.id, "is_inactive": record.status != "Active"} for record in db_subs]
+    scored = [{**record.raw_data, "id": record.id, "is_inactive": record.status in ["Canceled", "Cancellation Sent"]} for record in db_subs]
     
     return {
         "subscriptions": scored,
@@ -281,7 +283,7 @@ def update_subscription(sub_id: int, payload: SubscriptionUpdate, db: Session = 
     # Recalculate global stats for return
     demo_user_id = 1
     db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
-    all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status == "Canceled"} for r in db_subs]
+    all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status in ["Canceled", "Cancellation Sent"]} for r in db_subs]
 
     return {
         "subscriptions": all_scored,
@@ -342,8 +344,8 @@ def send_cancellation(sub_id: int, payload: SendCancellationRequest, db: Session
         # Return updated stats and subs to UI
         demo_user_id = 1
         db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
-        # Note: We now check status != "Active" instead of just "Canceled" for inactive flag
-        all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status != "Active"} for r in db_subs]
+        # Note: We now check status in ["Canceled", "Cancellation Sent"] for inactive flag
+        all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status in ["Canceled", "Cancellation Sent"]} for r in db_subs]
 
         return {
             "subscriptions": all_scored,
@@ -399,7 +401,7 @@ def apply_downgrade(sub_id: int, payload: ApplyDowngradeRequest, db: Session = D
         
         demo_user_id = 1
         db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
-        all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status != "Active"} for r in db_subs]
+        all_scored = [{**r.raw_data, "id": r.id, "is_inactive": r.status in ["Canceled", "Cancellation Sent"]} for r in db_subs]
 
         return {
             "subscriptions": all_scored,
