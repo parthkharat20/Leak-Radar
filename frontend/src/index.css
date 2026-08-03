@@ -132,6 +132,18 @@
   }
 }
 
+@keyframes border-beam {
+  100% {
+    offset-distance: 100%;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 @keyframes fade-rise {
   from {
     opacity: 0;
@@ -142,4 +154,5 @@
     transform: translateY(0);
   }
 }
+
 

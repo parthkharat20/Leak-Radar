@@ -1,29 +1,38 @@
 import { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { ArrowUpRight, TrendingDown, RotateCw, Activity, CalendarDays, Wallet, ShieldCheck, Filter } from 'lucide-react';
+import { ArrowUpRight, TrendingDown, RotateCw, Activity, CalendarDays, Wallet, ShieldCheck } from 'lucide-react';
 import { cn } from '../lib/utils';
 import SubscriptionCard from './SubscriptionCard';
 import CashflowRadar from './CashflowRadar';
+import { NumberTicker } from './magicui/NumberTicker';
 
 const COLORS = ['#024ad8', '#296ef9', '#356373', '#ff5050', '#1a1a1a', '#8ebdce', '#636363'];
 
-function MetricCard({ label, value, suffix, detail, icon: Icon, tone = 'text-[#1a1a1a]' }) {
+function MetricCard({ label, numericValue, prefix = "", suffix = "", detail, icon: Icon, tone = 'text-[#1a1a1a]' }) {
   return (
-    <div className="hp-card hp-card-hover p-6 flex flex-col justify-between min-h-[150px] relative overflow-hidden">
+    <motion.div
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      className="hp-card hp-card-hover p-6 flex flex-col justify-between min-h-[150px] relative overflow-hidden"
+    >
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-bold uppercase tracking-[0.7px] text-[#636363]">{label}</p>
         <Icon className="h-4 w-4 text-[#024ad8]" />
       </div>
       <div className="mt-4">
         <p className={cn('text-3xl font-bold tracking-tight font-mono', tone)}>
-          {value}<span className="ml-1 text-sm font-normal text-[#636363]">{suffix}</span>
+          {typeof numericValue === 'number' ? (
+            <NumberTicker value={numericValue} prefix={prefix} suffix={suffix} />
+          ) : (
+            <span>{numericValue}<span className="ml-1 text-sm font-normal text-[#636363]">{suffix}</span></span>
+          )}
         </p>
         <p className="mt-1 flex items-center gap-1 text-xs text-[#636363] font-medium">
           <ArrowUpRight className="h-3.5 w-3.5 text-[#024ad8]" />
           {detail}
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -60,12 +69,17 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
   const leakTone = leakScore > 60 ? 'text-[#ff5050]' : leakScore > 20 ? 'text-[#024ad8]' : 'text-[#1a1a1a]';
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 animate-fade-rise">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="w-full max-w-7xl mx-auto space-y-8"
+    >
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[#e8e8e8]">
         <div>
           <div className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.7px] text-[#024ad8]">
-            <span className="h-2 w-2 rounded-full bg-[#024ad8]" />
+            <span className="h-2 w-2 rounded-full bg-[#024ad8] animate-pulse" />
             HP LeakRadar Executive Summary
           </div>
           <h2 className="text-3xl md:text-4xl font-medium tracking-tight text-[#1a1a1a]">
@@ -78,20 +92,32 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
 
         <div className="flex flex-wrap items-center gap-3">
           {items_redacted > 0 && (
-            <div className="bg-[#f7f7f7] border border-[#e8e8e8] text-[#1a1a1a] text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-xs">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-[#f7f7f7] border border-[#e8e8e8] text-[#1a1a1a] text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-xs"
+            >
               <span>🔒</span>
               <span>{items_redacted} PII Items Scrubbed</span>
-            </div>
+            </motion.div>
           )}
-          <button onClick={onReset} className="hp-btn-outline hp-btn-sm text-xs">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onReset}
+            className="hp-btn-outline hp-btn-sm text-xs"
+          >
             Reset Overview
-          </button>
+          </motion.button>
         </div>
       </header>
 
       {/* Metric Cards Grid */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="hp-card hp-card-hover p-6 flex flex-col justify-between min-h-[150px] relative overflow-hidden">
+        <motion.div
+          whileHover={{ y: -3, transition: { duration: 0.2 } }}
+          className="hp-card hp-card-hover p-6 flex flex-col justify-between min-h-[150px] relative overflow-hidden"
+        >
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-bold uppercase tracking-[0.7px] text-[#636363]">Overall Leak Score</p>
             <Activity className="h-4 w-4 text-[#024ad8]" />
@@ -99,7 +125,7 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
           <div className="flex items-end justify-between gap-4 mt-4">
             <div>
               <p className={cn('text-3xl font-bold tracking-tight font-mono', leakTone)}>
-                {leakScore}<span className="ml-1 text-sm font-normal text-[#636363]">/100</span>
+                <NumberTicker value={leakScore} suffix="/100" />
               </p>
               <p className="mt-1 text-xs text-[#636363] font-medium">Weighted portfolio risk</p>
             </div>
@@ -107,11 +133,12 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
               <ShieldCheck className={cn('h-5 w-5', leakTone)} />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         <MetricCard
           label="Total Monthly Spend"
-          value={`₹${stats.total_monthly_spend?.toLocaleString('en-IN') || 0}`}
+          numericValue={stats.total_monthly_spend || 0}
+          prefix="₹"
           suffix="/mo"
           detail="Across active subscriptions"
           icon={Wallet}
@@ -119,14 +146,16 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
         />
         <MetricCard
           label="Potential Savings"
-          value={`₹${stats.potential_savings?.toLocaleString('en-IN') || 0}`}
+          numericValue={stats.potential_savings || 0}
+          prefix="₹"
           detail="Recoverable recurring leaks"
           icon={TrendingDown}
           tone="text-[#024ad8]"
         />
         <MetricCard
           label="Realized Savings"
-          value={`₹${stats.realized_savings?.toLocaleString('en-IN') || 0}`}
+          numericValue={stats.realized_savings || 0}
+          prefix="₹"
           detail="Actions completed"
           icon={ArrowUpRight}
           tone="text-[#1a1a1a]"
@@ -145,7 +174,7 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
               <h3 className="text-lg font-bold text-[#1a1a1a]">Category Spending</h3>
             </div>
             <span className="bg-[#f7f7f7] border border-[#e8e8e8] text-[#1a1a1a] px-2.5 py-1 rounded-full text-xs font-mono font-semibold">
-              ₹{stats.total_monthly_spend?.toLocaleString('en-IN') || 0}
+              ₹{(stats.total_monthly_spend || 0).toLocaleString('en-IN')}
             </span>
           </div>
           <div className="relative mt-4 h-[220px]">
@@ -188,14 +217,18 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
             {[
               { label: 'Recurring Plans', value: stats.recurring_count || 0, icon: RotateCw, color: 'text-[#024ad8]' },
               { label: 'Annual Subscriptions', value: stats.annual_count || 0, icon: CalendarDays, color: 'text-[#356373]' },
-              { label: 'Highest Monthly Expense', value: `₹${stats.highest_monthly_expense || 0}`, icon: Wallet, color: 'text-[#ff5050]' },
+              { label: 'Highest Monthly Expense', value: `₹${(stats.highest_monthly_expense || 0).toLocaleString('en-IN')}`, icon: Wallet, color: 'text-[#ff5050]' },
               { label: 'Highest Leak Score', value: stats.highest_leak_score || 0, icon: Activity, color: 'text-[#024ad8]' },
             ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="bg-[#f7f7f7] border border-[#e8e8e8] p-5 rounded-[12px]">
+              <motion.div
+                key={label}
+                whileHover={{ scale: 1.01 }}
+                className="bg-[#f7f7f7] border border-[#e8e8e8] p-5 rounded-[12px]"
+              >
                 <Icon className={cn('h-5 w-5', color)} />
                 <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.7px] text-[#636363]">{label}</p>
                 <p className="mt-1 text-2xl font-bold font-mono text-[#1a1a1a]">{value}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -211,51 +244,60 @@ export default function Dashboard({ analysisResult, onUpdateSubscription, onUpda
 
           {/* HP Category Tab Filters */}
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={cn('hp-tab', filter === 'all' && 'hp-tab-active')}
-            >
-              All ({subscriptions.length})
-            </button>
-            <button
-              onClick={() => setFilter('recurring')}
-              className={cn('hp-tab', filter === 'recurring' && 'hp-tab-active')}
-            >
-              Recurring ({subscriptions.filter(s => s.is_recurring && !s.is_inactive).length})
-            </button>
-            <button
-              onClick={() => setFilter('high_risk')}
-              className={cn('hp-tab', filter === 'high_risk' && 'hp-tab-active')}
-            >
-              High Risk ({subscriptions.filter(s => (s.leak_score || 0) > 30 && !s.is_inactive).length})
-            </button>
-            <button
-              onClick={() => setFilter('resolved')}
-              className={cn('hp-tab', filter === 'resolved' && 'hp-tab-active')}
-            >
-              Resolved ({subscriptions.filter(s => s.is_inactive).length})
-            </button>
+            {[
+              { id: 'all', label: `All (${subscriptions.length})` },
+              { id: 'recurring', label: `Recurring (${subscriptions.filter(s => s.is_recurring && !s.is_inactive).length})` },
+              { id: 'high_risk', label: `High Risk (${subscriptions.filter(s => (s.leak_score || 0) > 30 && !s.is_inactive).length})` },
+              { id: 'resolved', label: `Resolved (${subscriptions.filter(s => s.is_inactive).length})` },
+            ].map((tab) => (
+              <motion.button
+                key={tab.id}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setFilter(tab.id)}
+                className={cn('hp-tab', filter === tab.id && 'hp-tab-active')}
+              >
+                {tab.label}
+              </motion.button>
+            ))}
           </div>
         </div>
 
-        <div className="flex flex-col gap-5">
-          {filteredSubscriptions.map((sub, index) => (
-            <SubscriptionCard
-              key={`${sub.merchant}-${index}`}
-              subscription={sub}
-              onUpdateSubscription={onUpdateSubscription}
-              onUpdateData={onUpdateData}
-            />
-          ))}
+        <motion.div
+          layout
+          className="flex flex-col gap-5"
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredSubscriptions.map((sub, index) => (
+              <motion.div
+                key={`${sub.merchant}-${index}`}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3, delay: index * 0.04 }}
+              >
+                <SubscriptionCard
+                  subscription={sub}
+                  onUpdateSubscription={onUpdateSubscription}
+                  onUpdateData={onUpdateData}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
           {filteredSubscriptions.length === 0 && (
-            <div className="hp-card p-12 text-center text-sm text-[#636363] border-dashed">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="hp-card p-12 text-center text-sm text-[#636363] border-dashed"
+            >
               No subscriptions match the selected filter.
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
       </section>
-    </div>
+    </motion.div>
   );
 }
+
 
