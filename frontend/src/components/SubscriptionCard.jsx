@@ -4,9 +4,8 @@ import {
   getBrandIcon,
   getServiceInitials,
   getPrimaryActionKey,
-  getRecommendationBorderClass,
 } from '../lib/brandIcon';
-import { AlertCircle, ArrowUpRight, CheckCircle2, Info, Tag, Calendar, ShieldAlert, Sparkles, Layers, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, Calendar, ShieldAlert, AlertTriangle } from 'lucide-react';
 import CancellationModal from './CancellationModal';
 import DowngradeModal from './DowngradeModal';
 import NegotiateModal from './NegotiateModal';
@@ -21,13 +20,13 @@ function truncateWords(text, count = 8) {
 function ConfidenceMeter({ score }) {
   return (
     <div className="flex items-center gap-2 min-w-[72px]">
-      <div className="flex-1 h-px bg-zinc-800 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[#e8e8e8] rounded-full overflow-hidden">
         <div
-          className="h-px bg-sky-400 rounded-full"
+          className="h-full bg-[#024ad8] rounded-full"
           style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
         />
       </div>
-      <span className="text-[10px] font-medium text-zinc-500 font-mono tabular-nums shrink-0">
+      <span className="text-[10px] font-semibold text-[#636363] tabular-nums shrink-0">
         {score}%
       </span>
     </div>
@@ -58,45 +57,6 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
   const initials = getServiceInitials(merchant);
   const primaryAction = getPrimaryActionKey(recommendation);
 
-  const getTheme = (score) => {
-    if (score > 60) return 'rose';
-    if (score > 20) return 'amber';
-    return 'emerald';
-  };
-  const theme = getTheme(leak_score || 0);
-
-  const THEMES = {
-    rose: {
-      text: 'text-rose-400',
-      stroke: 'stroke-rose-400',
-      bgGlow: 'from-rose-500/40 via-rose-500/10',
-      badge: 'bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.15)]',
-      primaryBtn: 'bg-gradient-to-b from-rose-500/20 to-rose-500/5 border border-rose-500/30 text-rose-400 hover:from-rose-500/30 hover:to-rose-500/10 hover:border-rose-400/50 hover:shadow-[0_0_25px_rgba(244,63,94,0.3)] hover:-translate-y-0.5',
-      secondaryBtn: 'hover:border-rose-700 hover:bg-rose-900/30 hover:text-rose-100 hover:shadow-[0_0_15px_rgba(244,63,94,0.15)] focus-visible:ring-rose-400',
-      blur: 'bg-rose-500/[0.03] group-hover:bg-rose-500/[0.06]'
-    },
-    amber: {
-      text: 'text-amber-400',
-      stroke: 'stroke-amber-400',
-      bgGlow: 'from-amber-500/40 via-amber-500/10',
-      badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.15)]',
-      primaryBtn: 'bg-gradient-to-b from-amber-500/20 to-amber-500/5 border border-amber-500/30 text-amber-400 hover:from-amber-500/30 hover:to-amber-500/10 hover:border-amber-400/50 hover:shadow-[0_0_25px_rgba(245,158,11,0.3)] hover:-translate-y-0.5',
-      secondaryBtn: 'hover:border-amber-700 hover:bg-amber-900/30 hover:text-amber-100 hover:shadow-[0_0_15px_rgba(245,158,11,0.15)] focus-visible:ring-amber-400',
-      blur: 'bg-amber-500/[0.03] group-hover:bg-amber-500/[0.06]'
-    },
-    emerald: {
-      text: 'text-emerald-400',
-      stroke: 'stroke-emerald-400',
-      bgGlow: 'from-emerald-500/40 via-emerald-500/10',
-      badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]',
-      primaryBtn: 'bg-gradient-to-b from-emerald-500/20 to-emerald-500/5 border border-emerald-500/30 text-emerald-400 hover:from-emerald-500/30 hover:to-emerald-500/10 hover:border-emerald-400/50 hover:shadow-[0_0_25px_rgba(16,185,129,0.3)] hover:-translate-y-0.5',
-      secondaryBtn: 'hover:border-emerald-700 hover:bg-emerald-900/30 hover:text-emerald-100 hover:shadow-[0_0_15px_rgba(16,185,129,0.15)] focus-visible:ring-emerald-400',
-      blur: 'bg-emerald-500/[0.03] group-hover:bg-emerald-500/[0.06]'
-    }
-  };
-
-  const t = THEMES[theme];
-
   const actions = [
     { key: 'cancel', label: 'Cancel', open: () => setIsModalOpen(true) },
     { key: 'downgrade', label: 'Downgrade', open: () => setIsDowngradeModalOpen(true) },
@@ -116,48 +76,52 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
 
   return (
     <div className={cn(
-      "group relative flex min-h-[360px] md:min-h-0 flex-col lg:flex-row gap-6 justify-between overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6 backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-zinc-700 hover:bg-zinc-800/80 hover:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.8)]",
-      is_inactive && "opacity-75 grayscale-[0.4]"
+      "hp-card hp-card-hover relative flex flex-col lg:flex-row gap-6 justify-between p-6 transition-all duration-200",
+      is_inactive && "opacity-75 bg-[#f7f7f7]/60"
     )}>
-      <div className={cn("absolute inset-x-0 top-0 h-px bg-gradient-to-r to-transparent opacity-80 animate-pulse duration-[3000ms]", t.bgGlow)} />
-      <div className={cn("hidden lg:block absolute inset-y-0 left-0 w-px bg-gradient-to-b to-transparent opacity-80", t.bgGlow)} />
-      <div className={cn("pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full blur-3xl transition-colors duration-500", t.blur)} />
-      
+      {/* Top Accent Stripe */}
+      <div className="absolute top-0 inset-x-0 h-1 bg-[#024ad8] rounded-t-[16px]" />
+
       {/* Left Column (Brand & Score) */}
-      <div className="relative z-10 flex items-start justify-between lg:flex-col lg:w-[260px] lg:shrink-0 lg:border-r lg:border-zinc-800/60 lg:pr-6 lg:mb-0 mb-5">
-        <div className="flex items-start gap-4 min-w-0">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 shadow-inner shadow-black/40">
+      <div className="flex items-start justify-between lg:flex-col lg:w-[250px] lg:shrink-0 lg:border-r lg:border-[#e8e8e8] lg:pr-6">
+        <div className="flex items-start gap-3.5 min-w-0">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] border border-[#e8e8e8] bg-[#f7f7f7] shadow-xs">
             {BrandIcon ? (
               <BrandIcon className="h-6 w-6" style={{ color: brand.color }} />
             ) : (
-              <span className="text-sm font-bold font-mono text-zinc-300">{initials}</span>
+              <span className="text-sm font-bold text-[#1a1a1a]">{initials}</span>
             )}
           </div>
 
           <div className="min-w-0">
-            <h3 className="mb-1.5 flex flex-wrap items-center gap-2 text-lg font-bold tracking-tight text-zinc-50">
+            <h3 className="mb-1 flex flex-wrap items-center gap-2 text-lg font-bold text-[#1a1a1a] tracking-tight">
               <span className="truncate">{merchant}</span>
-              <span className="shrink-0 rounded-full border border-zinc-700/60 bg-zinc-800/50 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-300">
+            </h3>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="bg-[#f7f7f7] border border-[#e8e8e8] text-[#1a1a1a] px-2 py-0.5 rounded-[4px] text-[11px] font-semibold uppercase tracking-wider">
                 {billing_frequency}
               </span>
-              {subscription.appears_unused && (
-                <span className={cn("text-[11px] uppercase tracking-wide px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5 shrink-0 animate-pulse", t.badge)}>
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Appears Unused
-                </span>
-              )}
-            </h3>
-            <span className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">
-              {category}
-            </span>
+              <span className="text-xs font-medium text-[#636363] uppercase tracking-wider">
+                {category}
+              </span>
+            </div>
+
+            {subscription.appears_unused && (
+              <span className="mt-2 inline-flex items-center gap-1 bg-[#ff5050] text-white text-[10px] font-bold px-2 py-0.5 rounded-[3px] uppercase tracking-wider">
+                <AlertTriangle className="w-3 h-3" />
+                Appears Unused
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-zinc-800/80 bg-zinc-950/60 p-0.5 lg:mt-auto">
+        {/* HP Leak Score Circular Meter */}
+        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#e8e8e8] bg-[#f7f7f7] p-0.5 lg:mt-6">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 60 60">
-            <circle className="text-zinc-800 stroke-current" strokeWidth="4" fill="transparent" r={radius} cx="30" cy="30" />
+            <circle className="text-[#e8e8e8] stroke-current" strokeWidth="4" fill="transparent" r={radius} cx="30" cy="30" />
             <circle
-              className={cn("transition-all duration-1000 ease-out", t.stroke)}
+              className="text-[#024ad8] stroke-current transition-all duration-700 ease-out"
               strokeWidth="4"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
@@ -169,96 +133,88 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-sm font-semibold text-zinc-100 font-mono tabular-nums">{leak_score || 0}</span>
+            <span className="text-xs font-bold text-[#1a1a1a] font-mono">{leak_score || 0}</span>
+            <span className="text-[8px] font-bold text-[#636363] uppercase tracking-tighter">LEAK</span>
           </div>
         </div>
       </div>
 
       {/* Right Column (Details & Actions) */}
-      <div className="relative z-10 flex flex-1 flex-col justify-between space-y-5 lg:pl-2 lg:space-y-0">
-        <div className="flex items-end justify-between gap-4 lg:mb-5">
+      <div className="flex flex-1 flex-col justify-between space-y-4 lg:pl-2">
+        <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">Latest amount</p>
-            <p className="text-3xl font-bold tracking-tight text-white font-mono tabular-nums">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#636363]">Latest Amount</p>
+            <p className="text-2xl md:text-3xl font-bold tracking-tight text-[#1a1a1a] font-mono">
               ₹{latest_amount?.toLocaleString('en-IN')}
             </p>
           </div>
 
           <div className="text-right">
             {renewal_date && (
-              <div className="mb-1.5 flex items-center justify-end gap-1.5 text-sm text-zinc-400 font-mono tabular-nums">
-                <Calendar className="w-4 h-4" />
+              <div className="flex items-center justify-end gap-1.5 text-xs text-[#636363] font-medium">
+                <Calendar className="w-3.5 h-3.5 text-[#024ad8]" />
                 Renews {renewal_date}
               </div>
             )}
             {price_hike_pct > 0 && (
-              <div className={cn("flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold", t.badge)}>
+              <div className="mt-1 flex items-center gap-1 bg-[#f9d4d2] text-[#b3262b] px-2.5 py-1 rounded-[4px] text-xs font-semibold">
                 <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
-                <span className="font-mono tabular-nums">
-                  {merchant}: ₹{(latest_amount - subscription.price_hike_amount).toLocaleString('en-IN')} → ₹{latest_amount?.toLocaleString('en-IN')} (+{price_hike_pct}%)
+                <span>
+                  +₹{(subscription.price_hike_amount).toLocaleString('en-IN')} ({price_hike_pct}% hike)
                 </span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-5 items-end">
-          <div className="space-y-3 rounded-xl border border-zinc-700/70 bg-zinc-950/60 p-4 shadow-inner shadow-black/50 transition-all duration-300 hover:border-zinc-600/80">
-          <div className="flex items-center justify-between gap-2">
-            <div className={cn(
-              "flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold shadow-sm transition-transform hover:scale-105",
-              t.badge
-            )}>
-              {recommendation}
+        <div className="grid lg:grid-cols-2 gap-4 items-end">
+          <div className="space-y-2.5 rounded-[12px] border border-[#e8e8e8] bg-[#f7f7f7]/80 p-3.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 bg-white border border-[#e8e8e8] text-[#024ad8] font-bold px-3 py-1 rounded-[4px] text-xs uppercase tracking-wider shadow-xs">
+                {recommendation}
+              </span>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {confidence_score < 60 && <ShieldAlert className="w-4 h-4 text-[#ff5050]" />}
+                <ConfidenceMeter score={confidence_score} />
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {confidence_score < 60 && <ShieldAlert className={cn("w-4 h-4 animate-pulse", t.text)} />}
-              <ConfidenceMeter score={confidence_score} />
-            </div>
+            {recommendation_reason && (
+              <details className="group text-xs text-[#636363]">
+                <summary className="cursor-pointer list-none leading-relaxed font-medium">
+                  <span>{truncateWords(recommendation_reason)}</span>{' '}
+                  <span className="text-[#024ad8] font-semibold underline">Details</span>
+                </summary>
+                <p className="mt-2 leading-relaxed text-[#1a1a1a] bg-white p-2.5 rounded-[4px] border border-[#e8e8e8]">{recommendation_reason}</p>
+              </details>
+            )}
           </div>
 
-          {recommendation_reason && (
-          <details className="group text-sm text-zinc-400">
-              <summary className="cursor-pointer list-none leading-relaxed [&::-webkit-details-marker]:hidden">
-                <span className="text-zinc-400 font-medium">{truncateWords(recommendation_reason)}</span>{' '}
-                <span className="text-cyan-400 font-semibold group-open:hidden hover:text-cyan-300">Why?</span>
-              </summary>
-              <p className="mt-2.5 leading-relaxed text-zinc-300">{recommendation_reason}</p>
-            </details>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 lg:justify-end border-t border-zinc-700/60 pt-5 lg:border-t-0 lg:pt-0">
-          {primary && (
-            <button
-              onClick={() => handleAction(primary.open)}
-              className={cn(
-                "rounded-full px-5 py-2.5 text-sm font-bold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
-                t.primaryBtn,
-                is_inactive && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              {primary.label}
-            </button>
-          )}
-
-          <div className="flex items-center gap-2.5">
-            {secondaries.map((action) => (
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end border-t border-[#e8e8e8] pt-4 lg:border-t-0 lg:pt-0">
+            {primary && (
               <button
-                key={action.key}
-                onClick={() => handleAction(action.open)}
-                className={cn(
-                  "rounded-full border border-zinc-700 bg-zinc-800/60 px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 shadow-sm",
-                  t.secondaryBtn,
-                  is_inactive && "opacity-50 cursor-not-allowed"
-                )}
+                onClick={() => handleAction(primary.open)}
+                disabled={is_inactive}
+                className="hp-btn-primary text-xs py-2.5 px-5"
               >
-                {action.label}
+                {primary.label}
               </button>
-            ))}
+            )}
+
+            <div className="flex items-center gap-2">
+              {secondaries.map((action) => (
+                <button
+                  key={action.key}
+                  onClick={() => handleAction(action.open)}
+                  disabled={is_inactive}
+                  className="hp-btn-outline-ink text-xs py-2.5 px-4"
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
         </div>
       </div>
 
@@ -292,3 +248,4 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
     </div>
   );
 }
+

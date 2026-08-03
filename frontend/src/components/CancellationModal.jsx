@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Send, Loader2, Bot, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { draftCancellationEmail, sendCancellationEmail } from '../api';
-import { cn } from '../lib/utils';
 
 export default function CancellationModal({ subscription, isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(true);
@@ -60,80 +59,83 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/90">
-      <div className="bg-zinc-900/40 border border-zinc-800/70 rounded-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1a1a1a]/70 backdrop-blur-sm animate-fade-rise">
+      <div className="bg-white border border-[#e8e8e8] rounded-[16px] w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-[0_8px_24px_rgba(26,26,26,0.15)]">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-800/70 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#e8e8e8] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="bg-sky-400/10 p-2 rounded-full border border-sky-400/20">
-              <Bot className="w-5 h-5 text-sky-400" />
+            <div className="bg-[#c9e0fc]/60 p-2 rounded-full border border-[#024ad8]/20">
+              <Bot className="w-5 h-5 text-[#024ad8]" />
             </div>
-            <h2 className="text-base font-medium text-zinc-100">AI Cancellation Drafter</h2>
+            <div>
+              <h2 className="text-lg font-bold text-[#1a1a1a]">AI Cancellation Dispatcher</h2>
+              <p className="text-xs text-[#636363]">Draft and send formal cancellation notices</p>
+            </div>
           </div>
           <button 
             onClick={onClose}
             disabled={sending || success}
-            className="p-2 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-full transition-colors duration-150 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+            className="p-1.5 text-[#636363] hover:text-[#1a1a1a] hover:bg-[#f7f7f7] rounded-full transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+        <div className="p-6 flex-1 overflow-y-auto space-y-5">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 space-y-4">
-              <Loader2 className="w-10 h-10 text-sky-400 animate-spin" />
-              <p className="text-zinc-500 text-sm font-medium">
-                AI Agent is drafting...
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="w-8 h-8 border-3 border-[#024ad8]/20 border-t-[#024ad8] rounded-full animate-spin" />
+              <p className="text-[#636363] text-xs font-semibold uppercase tracking-wider">
+                AI Agent is drafting formal cancellation notice...
               </p>
             </div>
           ) : success ? (
-            <div className="flex flex-col items-center justify-center py-16 space-y-4">
-              <div className="bg-emerald-500/10 p-4 rounded-full border border-emerald-500/20">
-                <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="bg-[#c9e0fc] p-3 rounded-full text-[#024ad8]">
+                <CheckCircle2 className="w-10 h-10" />
               </div>
-              <h3 className="text-xl font-medium text-zinc-100">Email successfully delivered!</h3>
-              <p className="text-sm text-zinc-500">Updating your dashboard...</p>
+              <h3 className="text-xl font-bold text-[#1a1a1a]">Cancellation Notice Dispatched!</h3>
+              <p className="text-xs text-[#636363]">Updating portfolio state...</p>
             </div>
           ) : (
             <>
               {error && (
-                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-lg flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">{error}</p>
+                <div className="bg-[#f9d4d2] border border-[#b3262b]/20 text-[#b3262b] px-4 py-3 rounded-[4px] flex items-start gap-3 text-xs font-medium">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <p>{error}</p>
                 </div>
               )}
               
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs uppercase tracking-wide text-zinc-500 font-medium ml-1">To (Vendor Email)</label>
+                <div className="space-y-1">
+                  <label className="text-xs uppercase tracking-[0.7px] text-[#636363] font-bold">Recipient Vendor Email</label>
                   <input 
                     type="email"
                     value={draft.vendor_email}
                     onChange={(e) => setDraft({...draft, vendor_email: e.target.value})}
-                    className="w-full bg-[#09090b] border border-zinc-800/70 focus-visible:ring-2 focus-visible:ring-sky-400 rounded-lg px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors"
+                    className="w-full bg-white border border-[#e8e8e8] focus:border-[#024ad8] rounded-[4px] px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none font-medium"
                   />
                 </div>
                 
-                <div className="space-y-1.5">
-                  <label className="text-xs uppercase tracking-wide text-zinc-500 font-medium ml-1">Subject</label>
+                <div className="space-y-1">
+                  <label className="text-xs uppercase tracking-[0.7px] text-[#636363] font-bold">Subject Line</label>
                   <input 
                     type="text"
                     value={draft.subject}
                     onChange={(e) => setDraft({...draft, subject: e.target.value})}
-                    className="w-full bg-[#09090b] border border-zinc-800/70 focus-visible:ring-2 focus-visible:ring-sky-400 rounded-lg px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors"
+                    className="w-full bg-white border border-[#e8e8e8] focus:border-[#024ad8] rounded-[4px] px-3.5 py-2.5 text-sm text-[#1a1a1a] outline-none font-medium"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs uppercase tracking-wide text-zinc-500 font-medium ml-1">Message Body</label>
+                <div className="space-y-1">
+                  <label className="text-xs uppercase tracking-[0.7px] text-[#636363] font-bold">Message Content</label>
                   <textarea 
                     value={draft.body}
                     onChange={(e) => setDraft({...draft, body: e.target.value})}
                     rows={8}
-                    className="w-full bg-[#09090b] border border-zinc-800/70 focus-visible:ring-2 focus-visible:ring-sky-400 rounded-lg px-4 py-3 text-sm text-zinc-200 outline-none transition-colors resize-none"
+                    className="w-full bg-white border border-[#e8e8e8] focus:border-[#024ad8] rounded-[4px] p-3.5 text-xs text-[#1a1a1a] outline-none font-mono resize-none"
                   />
                 </div>
               </div>
@@ -143,23 +145,18 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
 
         {/* Footer */}
         {!loading && !success && (
-          <div className="px-6 py-4 border-t border-zinc-800/70 flex justify-end gap-3">
+          <div className="px-6 py-4 border-t border-[#e8e8e8] flex justify-end gap-3 bg-white">
             <button
               onClick={onClose}
               disabled={sending}
-              className="px-5 py-2.5 rounded-full text-sm font-medium text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/50 transition-colors duration-150 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+              className="hp-btn-outline-ink text-xs py-2.5 px-5"
             >
               Cancel
             </button>
             <button
               onClick={handleSend}
               disabled={sending || !draft.vendor_email}
-              className={cn(
-                "px-6 py-2.5 rounded-full text-sm font-medium flex items-center gap-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400",
-                sending || !draft.vendor_email
-                  ? "bg-zinc-900/40 text-zinc-500 cursor-not-allowed border border-zinc-800/70"
-                  : "bg-sky-400/10 text-sky-400 border border-sky-400/20 hover:bg-sky-400/20"
-              )}
+              className="hp-btn-primary text-xs py-2.5 px-6"
             >
               {sending ? (
                 <>
@@ -169,7 +166,7 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  Auto-Send via LeakRadar
+                  Dispatch Email Notice
                 </>
               )}
             </button>
@@ -181,3 +178,4 @@ export default function CancellationModal({ subscription, isOpen, onClose, onSuc
     document.body
   );
 }
+

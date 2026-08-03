@@ -1,5 +1,4 @@
-@import url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/style.css');
-@import url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/style.css');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,46 +6,106 @@
 
 @layer base {
   :root {
-    --background: 240 6% 4%;
-    --foreground: 240 5% 96%;
-    --card: 240 4% 16%;
-    --card-foreground: 240 5% 96%;
-    --popover: 240 6% 4%;
-    --popover-foreground: 240 5% 96%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 240 6% 4%;
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 240 5% 96%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 240 4% 16%;
-    --accent-foreground: 240 5% 96%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 240 5% 96%;
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 199 89% 48%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 219 98% 43%; /* #024ad8 HP Electric Blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 97%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 97%;
+    --muted-foreground: 0 0% 39%;
+    --accent: 0 0% 97%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 358 65% 43%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 219 98% 43%;
   }
 }
 
 @layer base {
   * {
-    @apply border-zinc-800/70;
+    @apply border-[#e8e8e8];
   }
   body {
-    @apply bg-[#09090b] text-zinc-100 font-sans antialiased;
+    @apply bg-white text-[#1a1a1a] font-sans antialiased selection:bg-[#024ad8]/10 selection:text-[#024ad8];
+  }
+}
+
+@layer components {
+  /* HP Design System Buttons */
+  .hp-btn-primary {
+    @apply bg-[#024ad8] hover:bg-[#0e3191] text-white text-[13px] font-semibold tracking-[0.7px] uppercase px-6 py-3 rounded-[4px] transition-colors duration-150 flex items-center justify-center gap-2 disabled:bg-[#c2c2c2] disabled:cursor-not-allowed shadow-none;
+  }
+  
+  .hp-btn-ink {
+    @apply bg-[#1a1a1a] hover:bg-[#292929] text-white text-[13px] font-semibold tracking-[0.7px] uppercase px-6 py-3 rounded-[4px] transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-50 shadow-none;
+  }
+
+  .hp-btn-outline {
+    @apply bg-white hover:bg-[#f7f7f7] text-[#024ad8] border border-[#024ad8] text-[13px] font-semibold tracking-[0.7px] uppercase px-6 py-3 rounded-[4px] transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-50 shadow-none;
+  }
+
+  .hp-btn-outline-ink {
+    @apply bg-white hover:bg-[#f7f7f7] text-[#1a1a1a] border border-[#1a1a1a] text-[13px] font-semibold tracking-[0.7px] uppercase px-6 py-3 rounded-[4px] transition-colors duration-150 flex items-center justify-center gap-2 disabled:opacity-50 shadow-none;
+  }
+
+  .hp-btn-sm {
+    @apply py-2 px-4 text-[11px] tracking-[0.5px];
+  }
+
+  /* HP Cards & Containers */
+  .hp-card {
+    @apply bg-white rounded-[16px] border border-[#e8e8e8] shadow-[0_2px_8px_rgba(26,26,26,0.06)] transition-all duration-200;
+  }
+
+  .hp-card-hover {
+    @apply hover:border-[#024ad8]/40 hover:shadow-[0_4px_16px_rgba(2,74,216,0.08)];
+  }
+
+  .hp-badge-coral {
+    @apply bg-[#ff5050] text-white text-[11px] font-bold px-2 py-0.5 rounded-[3px] uppercase tracking-wider;
+  }
+
+  .hp-badge-ink {
+    @apply bg-[#1a1a1a] text-white text-xs font-medium px-2.5 py-1 rounded-full;
+  }
+
+  .hp-badge-outline {
+    @apply bg-white border border-[#1a1a1a] text-[#1a1a1a] text-xs font-medium px-2.5 py-1 rounded-full;
+  }
+
+  /* Category Tab Pills */
+  .hp-tab {
+    @apply bg-white text-[#1a1a1a] hover:bg-[#f7f7f7] text-xs font-medium px-5 py-2 rounded-full border border-[#e8e8e8] transition-colors cursor-pointer;
+  }
+
+  .hp-tab-active {
+    @apply bg-[#1a1a1a] text-white border-[#1a1a1a] font-semibold;
+  }
+
+  /* HP Chevron Brand Slash Graphic */
+  .hp-chevron-accent {
+    position: relative;
+  }
+  .hp-chevron-accent::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -12px;
+    width: 6px;
+    height: 100%;
+    background-color: #024ad8;
+    transform: skewX(-20deg);
   }
 }
 
 @layer utilities {
-  .animate-radar-sweep {
-    animation: radar-sweep 10s linear infinite;
-  }
-
-  .animate-radar-ping {
-    animation: radar-ping 4s ease-out infinite;
-  }
-
   .animate-fade-rise {
     animation: fade-rise 450ms ease-out both;
   }
@@ -59,74 +118,17 @@
     animation: fade-rise 450ms ease-out 200ms both;
   }
 
-  .animate-marquee {
-    animation: marquee 50s linear infinite;
-  }
-
-  .animate-border-shimmer {
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 35%,
-      rgba(56, 189, 248, 0.3) 50%,
-      transparent 65%,
-      transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: border-shimmer 3.5s linear infinite;
-    opacity: 0.5;
-  }
-
-  .animate-border-shimmer-active {
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      transparent 28%,
-      rgba(56, 189, 248, 0.55) 50%,
-      transparent 72%,
-      transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: border-shimmer 2s linear infinite;
-    opacity: 0.9;
-  }
-
   .view-transition {
     animation: fade-rise 400ms ease-out both;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .animate-radar-sweep,
-    .animate-radar-ping,
     .animate-fade-rise,
     .animate-fade-rise-delay-1,
     .animate-fade-rise-delay-2,
-    .animate-marquee,
-    .animate-border-shimmer,
-    .animate-border-shimmer-active,
     .view-transition {
       animation: none;
     }
-  }
-}
-
-@keyframes radar-sweep {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes radar-ping {
-  0% {
-    transform: scale(1);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(2.4);
-    opacity: 0;
   }
 }
 
@@ -141,20 +143,3 @@
   }
 }
 
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-@keyframes border-shimmer {
-  0% {
-    background-position: 200% center;
-  }
-  100% {
-    background-position: -200% center;
-  }
-}
