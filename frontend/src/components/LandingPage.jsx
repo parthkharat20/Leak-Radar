@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import {
   Database,
   Shield,
@@ -13,6 +14,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { BorderBeam } from './magicui/BorderBeam';
+import { DotPattern } from './magicui/DotPattern';
 
 const FEATURES = [
   {
@@ -65,25 +68,60 @@ const FEATURES = [
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: 'easeOut' },
+  },
+};
+
 export default function LandingPage({ onGetStarted, onLoadDemo, isLoading }) {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-16">
       {/* HP Hero Promo Card with Chevron Decoration */}
-      <section className="relative animate-fade-rise mt-4">
+      <motion.section
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative mt-4"
+      >
         {/* HP Blue Chevron Brand Slash Decorations */}
         <div className="hidden lg:block absolute -left-5 top-1/2 -translate-y-1/2 w-3 h-48 bg-[#024ad8] -skew-x-12 rounded-[1px] shadow-sm" />
         <div className="hidden lg:block absolute -right-5 top-1/2 -translate-y-1/2 w-3 h-48 bg-[#024ad8] -skew-x-12 rounded-[1px] shadow-sm" />
 
         <div className="hp-card p-8 md:p-14 border-[#e8e8e8] relative overflow-hidden bg-gradient-to-br from-white via-white to-[#f7f7f7]">
-          {/* Subtle background graphic */}
+          {/* Subtle DotPattern Background */}
+          <DotPattern className="opacity-40 [mask-image:radial-gradient(400px_circle_at_center,white,transparent)]" />
+          
+          {/* Border Beam Animation */}
+          <BorderBeam size={250} duration={14} colorFrom="#024ad8" colorTo="#296ef9" borderWidth={1.5} />
+
+          {/* Background glow graphic */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-[#c9e0fc]/20 rounded-full blur-3xl -z-10" />
 
-          <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+          <div className="flex flex-col items-center text-center max-w-3xl mx-auto relative z-10">
             {/* Pill Tag */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#024ad8]/20 bg-[#c9e0fc]/40 px-4 py-1 mb-6 text-xs font-semibold text-[#024ad8]">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.3 }}
+              className="inline-flex items-center gap-2 rounded-full border border-[#024ad8]/20 bg-[#c9e0fc]/40 px-4 py-1 mb-6 text-xs font-semibold text-[#024ad8]"
+            >
               <Sparkles className="w-3.5 h-3.5 text-[#024ad8]" />
               <span>Enterprise AI · Groq Llama 3.3 Financial Intelligence</span>
-            </div>
+            </motion.div>
 
             <h1 className="text-4xl md:text-5xl font-medium tracking-tight text-[#1a1a1a] leading-[1.08] mb-6">
               Stop Bleeding Money on{' '}
@@ -97,22 +135,26 @@ export default function LandingPage({ onGetStarted, onLoadDemo, isLoading }) {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onGetStarted}
                 disabled={isLoading}
                 className="hp-btn-primary w-full sm:w-auto min-w-[220px]"
               >
                 <span>Upload Bank Statement</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onLoadDemo}
                 disabled={isLoading}
                 className="hp-btn-outline-ink w-full sm:w-auto min-w-[220px]"
               >
                 <UserCircle2 className="w-4 h-4 text-[#024ad8]" />
                 <span>Load Demo (Parth Kharat)</span>
-              </button>
+              </motion.button>
             </div>
 
             {/* Micro Badges */}
@@ -129,10 +171,15 @@ export default function LandingPage({ onGetStarted, onLoadDemo, isLoading }) {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Feature Bento Grid Section */}
-      <section className="animate-fade-rise-delay-1">
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: '-50px' }}
+        variants={containerVariants}
+      >
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-[#e8e8e8]">
           <div>
             <span className="text-xs uppercase tracking-[0.7px] text-[#024ad8] font-bold block mb-1">
@@ -149,8 +196,10 @@ export default function LandingPage({ onGetStarted, onLoadDemo, isLoading }) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {FEATURES.map((feature) => (
-            <div
+            <motion.div
               key={feature.title}
+              variants={itemVariants}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
               className="hp-card hp-card-hover p-6 flex flex-col justify-between"
             >
               <div>
@@ -163,14 +212,20 @@ export default function LandingPage({ onGetStarted, onLoadDemo, isLoading }) {
                 <h3 className="text-base font-semibold text-[#1a1a1a] mb-2">{feature.title}</h3>
                 <p className="text-xs text-[#636363] leading-relaxed">{feature.description}</p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* HP Dark Slab Section (Closing Prelude) */}
-      <section className="animate-fade-rise-delay-2">
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-50px' }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="bg-[#1a1a1a] text-white rounded-[16px] p-8 md:p-12 shadow-lg relative overflow-hidden">
+          <DotPattern className="fill-white/10 [mask-image:radial-gradient(300px_circle_at_center,white,transparent)]" />
           <div className="absolute -right-16 -bottom-16 w-80 h-80 bg-[#024ad8]/20 rounded-full blur-2xl" />
 
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -187,25 +242,30 @@ export default function LandingPage({ onGetStarted, onLoadDemo, isLoading }) {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onGetStarted}
                 disabled={isLoading}
                 className="hp-btn-primary min-w-[200px]"
               >
                 <span>Upload Statement</span>
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onLoadDemo}
                 disabled={isLoading}
                 className="bg-[#292929] hover:bg-[#3d3d3d] text-white text-[13px] font-semibold tracking-[0.7px] uppercase px-6 py-3 rounded-[4px] transition-colors duration-150 flex items-center justify-center gap-2 border border-zinc-700"
               >
                 <span>Explore Demo</span>
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 }
+
 

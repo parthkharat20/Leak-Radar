@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Loader2, Zap, CheckCircle2, Radar } from 'lucide-react';
+import { Zap, CheckCircle2, Radar } from 'lucide-react';
 import { getCashflowForecast } from '../api';
+import { Skeleton } from './magicui/Skeleton';
 
 export default function CashflowRadar({ trigger }) {
   const [data, setData] = useState(null);
@@ -27,9 +29,16 @@ export default function CashflowRadar({ trigger }) {
   }, [trigger]);
 
   if (loading) return (
-    <div className="hp-card p-8 flex flex-col items-center justify-center min-h-[280px]">
-      <Loader2 className="mb-3 h-7 w-7 animate-spin text-[#024ad8]" />
-      <p className="text-xs font-semibold text-[#636363]">Calibrating HP Cashflow Forecast Engine...</p>
+    <div className="hp-card p-8 flex flex-col justify-between min-h-[280px] space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-6 w-56" />
+        </div>
+        <Skeleton className="h-7 w-24 rounded-full" />
+      </div>
+      <Skeleton className="h-12 w-full rounded-[8px]" />
+      <Skeleton className="h-[180px] w-full rounded-[8px]" />
     </div>
   );
 
@@ -59,11 +68,16 @@ export default function CashflowRadar({ trigger }) {
   };
 
   return (
-    <section className="hp-card p-6 md:p-7 relative overflow-hidden">
+    <motion.section
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="hp-card p-6 md:p-7 relative overflow-hidden"
+    >
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.7px] text-[#024ad8]">
-            <Radar className="h-4 w-4" />
+            <Radar className="h-4 w-4 text-[#024ad8]" />
             <span>Forecast Intelligence</span>
           </div>
           <h3 className="text-xl font-bold text-[#1a1a1a]">30-Day Cashflow Projection</h3>
@@ -78,13 +92,17 @@ export default function CashflowRadar({ trigger }) {
 
       <div className="mt-5">
         {shock_alert?.has_risk ? (
-          <div className="flex items-start gap-3 rounded-[8px] border border-[#b3262b]/20 bg-[#f9d4d2] p-3.5 text-[#b3262b]">
-            <Zap className="h-4 w-4 shrink-0 mt-0.5 text-[#b3262b]" />
+          <motion.div
+            initial={{ scale: 0.98, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex items-start gap-3 rounded-[8px] border border-[#b3262b]/20 bg-[#f9d4d2] p-3.5 text-[#b3262b]"
+          >
+            <Zap className="h-4 w-4 shrink-0 mt-0.5 text-[#b3262b] animate-bounce" />
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider">Cashflow Cluster Alert</h4>
               <p className="mt-0.5 text-xs leading-relaxed">{shock_alert.message}</p>
             </div>
-          </div>
+          </motion.div>
         ) : (
           <div className="flex items-center gap-2.5 rounded-[8px] border border-[#e8e8e8] bg-[#f7f7f7] p-3 text-[#1a1a1a]">
             <CheckCircle2 className="h-4 w-4 text-[#024ad8]" />
@@ -110,7 +128,8 @@ export default function CashflowRadar({ trigger }) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
-    </section>
+    </motion.section>
   );
 }
+
 

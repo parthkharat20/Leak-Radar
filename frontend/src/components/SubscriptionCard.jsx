@@ -1,14 +1,16 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import {
   getBrandIcon,
   getServiceInitials,
   getPrimaryActionKey,
 } from '../lib/brandIcon';
-import { ArrowUpRight, Calendar, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { ArrowUpRight, Calendar, ShieldAlert, AlertTriangle, ChevronDown } from 'lucide-react';
 import CancellationModal from './CancellationModal';
 import DowngradeModal from './DowngradeModal';
 import NegotiateModal from './NegotiateModal';
+import { BorderBeam } from './magicui/BorderBeam';
 
 function truncateWords(text, count = 8) {
   if (!text) return '';
@@ -21,9 +23,11 @@ function ConfidenceMeter({ score }) {
   return (
     <div className="flex items-center gap-2 min-w-[72px]">
       <div className="flex-1 h-1.5 bg-[#e8e8e8] rounded-full overflow-hidden">
-        <div
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(100, Math.max(0, score))}%` }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
           className="h-full bg-[#024ad8] rounded-full"
-          style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
         />
       </div>
       <span className="text-[10px] font-semibold text-[#636363] tabular-nums shrink-0">
@@ -40,7 +44,7 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
     billing_frequency,
     latest_amount,
     price_hike_pct,
-    leak_score,
+    leak_score = 0,
     recommendation,
     recommendation_reason,
     confidence_score = 0,
@@ -51,6 +55,7 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDowngradeModalOpen, setIsDowngradeModalOpen] = useState(false);
   const [isNegotiateModalOpen, setIsNegotiateModalOpen] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const brand = getBrandIcon(merchant);
   const BrandIcon = brand?.Icon;
@@ -69,18 +74,28 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
   const radius = 24;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - ((leak_score || 0) / 100) * circumference;
+  const isHighRisk = leak_score > 30 && !is_inactive;
 
   const handleAction = (open) => {
     if (!is_inactive) open();
   };
 
   return (
-    <div className={cn(
-      "hp-card hp-card-hover relative flex flex-col lg:flex-row gap-6 justify-between p-6 transition-all duration-200",
-      is_inactive && "opacity-75 bg-[#f7f7f7]/60"
-    )}>
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+      className={cn(
+        "hp-card hp-card-hover relative flex flex-col lg:flex-row gap-6 justify-between p-6 transition-all duration-200 overflow-hidden",
+        is_inactive && "opacity-75 bg-[#f7f7f7]/60"
+      )}
+    >
       {/* Top Accent Stripe */}
       <div className="absolute top-0 inset-x-0 h-1 bg-[#024ad8] rounded-t-[16px]" />
+
+      {/* Magic UI BorderBeam for High Risk cards */}
+      {isHighRisk && (
+        <BorderBeam size={180} duration={10} colorFrom="#ff5050" colorTo="#024ad8" borderWidth={1.5} />
+      )}
 
       {/* Left Column (Brand & Score) */}
       <div className="flex items-start justify-between lg:flex-col lg:w-[250px] lg:shrink-0 lg:border-r lg:border-[#e8e8e8] lg:pr-6">
@@ -120,11 +135,13 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
         <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#e8e8e8] bg-[#f7f7f7] p-0.5 lg:mt-6">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 60 60">
             <circle className="text-[#e8e8e8] stroke-current" strokeWidth="4" fill="transparent" r={radius} cx="30" cy="30" />
-            <circle
-              className="text-[#024ad8] stroke-current transition-all duration-700 ease-out"
+            <motion.circle
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="text-[#024ad8] stroke-current"
               strokeWidth="4"
               strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
               strokeLinecap="round"
               fill="transparent"
               r={radius}
@@ -181,37 +198,59 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
             </div>
 
             {recommendation_reason && (
-              <details className="group text-xs text-[#636363]">
-                <summary className="cursor-pointer list-none leading-relaxed font-medium">
-                  <span>{truncateWords(recommendation_reason)}</span>{' '}
-                  <span className="text-[#024ad8] font-semibold underline">Details</span>
-                </summary>
-                <p className="mt-2 leading-relaxed text-[#1a1a1a] bg-white p-2.5 rounded-[4px] border border-[#e8e8e8]">{recommendation_reason}</p>
-              </details>
+              <div className="text-xs text-[#636363]">
+                <div 
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="cursor-pointer leading-relaxed font-medium flex items-center justify-between"
+                >
+                  <span>{truncateWords(recommendation_reason)}</span>
+                  <span className="text-[#024ad8] font-semibold underline flex items-center gap-0.5 shrink-0 ml-1">
+                    Details
+                    <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", showDetails && "rotate-180")} />
+                  </span>
+                </div>
+                <AnimatePresence>
+                  {showDetails && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mt-2 leading-relaxed text-[#1a1a1a] bg-white p-2.5 rounded-[4px] border border-[#e8e8e8] overflow-hidden"
+                    >
+                      {recommendation_reason}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 lg:justify-end border-t border-[#e8e8e8] pt-4 lg:border-t-0 lg:pt-0">
             {primary && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => handleAction(primary.open)}
                 disabled={is_inactive}
                 className="hp-btn-primary text-xs py-2.5 px-5"
               >
                 {primary.label}
-              </button>
+              </motion.button>
             )}
 
             <div className="flex items-center gap-2">
               {secondaries.map((action) => (
-                <button
+                <motion.button
                   key={action.key}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => handleAction(action.open)}
                   disabled={is_inactive}
                   className="hp-btn-outline-ink text-xs py-2.5 px-4"
                 >
                   {action.label}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -245,7 +284,8 @@ export default function SubscriptionCard({ subscription, onUpdateSubscription, o
         isOpen={isNegotiateModalOpen}
         onClose={() => setIsNegotiateModalOpen(false)}
       />
-    </div>
+    </motion.div>
   );
 }
+
 
