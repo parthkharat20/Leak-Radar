@@ -15,7 +15,7 @@ export default function DowngradeModal({ subscription, isOpen, onClose, onSucces
       setLoading(true);
       setError(null);
       setSuccess(false);
-      
+
       const fetchOptions = async () => {
         try {
           const result = await getDowngradeOptions(subscription.id);
@@ -26,7 +26,7 @@ export default function DowngradeModal({ subscription, isOpen, onClose, onSucces
           setLoading(false);
         }
       };
-      
+
       fetchOptions();
     }
   }, [isOpen, subscription]);
@@ -53,21 +53,24 @@ export default function DowngradeModal({ subscription, isOpen, onClose, onSucces
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/90">
-      <div className="bg-zinc-900/40 border border-zinc-800/70 rounded-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1a1a1a]/70 backdrop-blur-sm animate-fade-rise">
+      <div className="bg-white border border-[#e8e8e8] rounded-[16px] w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-[0_8px_24px_rgba(26,26,26,0.15)]">
+
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-800/70 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#e8e8e8] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="bg-sky-400/10 p-2 rounded-full border border-sky-400/20">
-              <TrendingDown className="w-5 h-5 text-sky-400" />
+            <div className="bg-[#c9e0fc]/60 p-2 rounded-full border border-[#024ad8]/20">
+              <TrendingDown className="w-5 h-5 text-[#024ad8]" />
             </div>
-            <h2 className="text-base font-medium text-zinc-100">AI Smart Tier Optimization</h2>
+            <div>
+              <h2 className="text-lg font-bold text-[#1a1a1a]">AI Smart Tier Optimization</h2>
+              <p className="text-xs text-[#636363]">Find and switch to lower-cost plan tiers</p>
+            </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             disabled={applying || success}
-            className="p-2 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-full transition-colors duration-150 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+            className="p-1.5 text-[#636363] hover:text-[#1a1a1a] hover:bg-[#f7f7f7] rounded-full transition-colors disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
@@ -76,56 +79,56 @@ export default function DowngradeModal({ subscription, isOpen, onClose, onSucces
         {/* Body */}
         <div className="p-6 flex-1 overflow-y-auto space-y-6">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 space-y-4">
-              <Loader2 className="w-10 h-10 text-sky-400 animate-spin" />
-              <p className="text-zinc-500 text-sm font-medium">
-                AI is finding cheaper plans for {subscription.merchant}...
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="w-8 h-8 border-3 border-[#024ad8]/20 border-t-[#024ad8] rounded-full animate-spin" />
+              <p className="text-[#636363] text-xs font-semibold uppercase tracking-wider">
+                Searching lower-cost plans for {subscription.merchant}...
               </p>
             </div>
           ) : success ? (
-            <div className="flex flex-col items-center justify-center py-16 space-y-4">
-              <div className="bg-emerald-500/10 p-4 rounded-full border border-emerald-500/20">
-                <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="bg-[#c9e0fc] p-3 rounded-full text-[#024ad8]">
+                <CheckCircle2 className="w-10 h-10" />
               </div>
-              <h3 className="text-xl font-medium text-zinc-100">Plan successfully downgraded!</h3>
-              <p className="text-sm text-zinc-500">Updating your dashboard...</p>
+              <h3 className="text-xl font-bold text-[#1a1a1a]">Plan Downgrade Applied!</h3>
+              <p className="text-xs text-[#636363]">Updating portfolio metrics...</p>
             </div>
           ) : (
             <>
               {error && (
-                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-lg flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">{error}</p>
+                <div className="bg-[#f9d4d2] border border-[#b3262b]/20 text-[#b3262b] px-4 py-3 rounded-[4px] flex items-start gap-3 text-xs font-medium">
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <p>{error}</p>
                 </div>
               )}
-              
+
               <div className="space-y-4">
-                <p className="text-sm text-zinc-400">
-                  You are currently paying <strong className="text-zinc-100 font-mono tabular-nums">₹{subscription.latest_amount}</strong> for {subscription.merchant}. Here are cheaper alternatives found by AI:
+                <p className="text-xs text-[#636363] font-medium">
+                  Current rate: <span className="font-bold text-[#1a1a1a]">₹{subscription.latest_amount}</span> for {subscription.merchant}. HP AI found the following lower-cost tiers:
                 </p>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {options.map((opt, idx) => (
-                    <div key={idx} className="bg-zinc-900/40 border border-zinc-800/70 rounded-lg p-5 flex flex-col justify-between hover:border-zinc-700/80 transition-colors duration-150">
+                    <div key={idx} className="hp-card p-5 flex flex-col justify-between border-[#e8e8e8]">
                       <div>
                         <div className="flex justify-between items-start mb-2 gap-2">
-                          <h4 className="font-medium text-zinc-100 text-base">{opt.plan_name}</h4>
-                          <span className="bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full text-xs font-medium border border-emerald-500/20 font-mono tabular-nums shrink-0">
+                          <h4 className="font-bold text-[#1a1a1a] text-base">{opt.plan_name}</h4>
+                          <span className="bg-[#c9e0fc] text-[#024ad8] px-2 py-0.5 rounded-[4px] text-[11px] font-bold font-mono shrink-0">
                             Save ₹{opt.savings}/mo
                           </span>
                         </div>
-                        <p className="text-2xl font-semibold text-zinc-100 mb-4 font-mono tabular-nums">₹{opt.new_price}</p>
-                        <p className="text-xs text-zinc-500 mb-6">
+                        <p className="text-2xl font-bold text-[#1a1a1a] mb-3 font-mono">₹{opt.new_price}</p>
+                        <p className="text-xs text-[#636363] leading-relaxed mb-5">
                           {opt.features}
                         </p>
                       </div>
-                      
+
                       <button
                         onClick={() => handleApply(opt.plan_name, opt.new_price)}
                         disabled={applying}
-                        className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-full text-sm font-medium transition-colors duration-150 disabled:opacity-50 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                        className="hp-btn-primary w-full text-xs py-2.5"
                       >
-                        {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply Downgrade'}
+                        {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply Downgrade Tier'}
                       </button>
                     </div>
                   ))}
@@ -139,3 +142,4 @@ export default function DowngradeModal({ subscription, isOpen, onClose, onSucces
     document.body
   );
 }
+

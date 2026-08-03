@@ -89,69 +89,69 @@ export default function NegotiateModal({ subscription, isOpen, onClose }) {
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#09090b]/90">
-      <div className="bg-zinc-900/40 border border-zinc-800/70 rounded-lg w-full max-w-2xl overflow-hidden flex flex-col h-[80vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1a1a1a]/70 backdrop-blur-sm animate-fade-rise">
+      <div className="bg-white border border-[#e8e8e8] rounded-[16px] w-full max-w-2xl overflow-hidden flex flex-col h-[80vh] shadow-[0_8px_24px_rgba(26,26,26,0.15)]">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-800/70 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[#e8e8e8] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="bg-sky-400/10 p-2 rounded-full border border-sky-400/20">
-              <MessageSquare className="w-5 h-5 text-sky-400" />
+            <div className="bg-[#c9e0fc]/60 p-2 rounded-full border border-[#024ad8]/20">
+              <MessageSquare className="w-5 h-5 text-[#024ad8]" />
             </div>
             <div>
-              <h2 className="text-base font-medium text-zinc-100">AI Retention Negotiator</h2>
-              <p className="text-xs text-zinc-500">Practicing for {subscription.merchant}</p>
+              <h2 className="text-lg font-bold text-[#1a1a1a]">AI Retention Negotiator</h2>
+              <p className="text-xs text-[#636363]">Practice or copy script for {subscription.merchant}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+            className="p-1.5 text-[#636363] hover:text-[#1a1a1a] hover:bg-[#f7f7f7] rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-zinc-800/70">
+        {/* HP Tab Switcher */}
+        <div className="flex border-b border-[#e8e8e8] bg-[#f7f7f7]">
           <button
-            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-400 ${activeTab === 'cheatsheet' ? 'text-sky-400 border-b-2 border-sky-400 bg-sky-400/5' : 'text-zinc-500 hover:text-zinc-100'}`}
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'cheatsheet' ? 'text-[#024ad8] border-b-2 border-[#024ad8] bg-white' : 'text-[#636363] hover:text-[#1a1a1a]'}`}
             onClick={() => setActiveTab('cheatsheet')}
           >
-            <FileText className="w-4 h-4" /> Negotiation Cheatsheet
+            <FileText className="w-4 h-4" /> Strategy Playbook
           </button>
           <button
-            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-400 ${activeTab === 'practice' ? 'text-sky-400 border-b-2 border-sky-400 bg-sky-400/5' : 'text-zinc-500 hover:text-zinc-100'}`}
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${activeTab === 'practice' ? 'text-[#024ad8] border-b-2 border-[#024ad8] bg-white' : 'text-[#636363] hover:text-[#1a1a1a]'}`}
             onClick={() => setActiveTab('practice')}
           >
-            <MessageSquare className="w-4 h-4" /> Practice with AI Rep
+            <MessageSquare className="w-4 h-4" /> AI Roleplay Simulator
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden flex flex-col relative">
+        <div className="flex-1 overflow-hidden flex flex-col relative bg-white">
           
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-4">
-              <Loader2 className="w-10 h-10 text-sky-400 animate-spin" />
-              <p className="text-zinc-500 text-sm font-medium">Generating negotiation playbook...</p>
+            <div className="flex flex-col items-center justify-center h-full space-y-3">
+              <div className="w-8 h-8 border-3 border-[#024ad8]/20 border-t-[#024ad8] rounded-full animate-spin" />
+              <p className="text-[#636363] text-xs font-semibold uppercase tracking-wider">Generating custom negotiation playbook...</p>
             </div>
           ) : (
             <>
               {/* Cheatsheet Tab */}
               {activeTab === 'cheatsheet' && playbook && (
                 <div className="p-6 overflow-y-auto h-full space-y-6">
-                  <div className="bg-sky-400/5 border border-sky-400/20 rounded-lg p-5">
-                    <h3 className="text-zinc-100 font-medium text-base mb-4 flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-sky-400" />
-                      Your Custom Strategy
+                  <div className="bg-[#f7f7f7] border border-[#e8e8e8] rounded-[12px] p-5">
+                    <h3 className="text-[#1a1a1a] font-bold text-base mb-4 flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-[#024ad8]" />
+                      Custom Retention Strategy & Script
                     </h3>
-                    <ul className="space-y-4">
+                    <ul className="space-y-3.5">
                       {playbook.script.map((bullet, idx) => (
-                        <li key={idx} className="flex gap-3 text-zinc-400 text-sm">
-                          <span className="bg-sky-400/10 text-sky-400 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 font-medium text-xs font-mono tabular-nums">
+                        <li key={idx} className="flex gap-3 text-[#1a1a1a] text-xs leading-relaxed font-medium">
+                          <span className="bg-[#024ad8] text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px]">
                             {idx + 1}
                           </span>
-                          <span className="leading-relaxed">{bullet}</span>
+                          <span>{bullet}</span>
                         </li>
                       ))}
                     </ul>
@@ -159,10 +159,10 @@ export default function NegotiateModal({ subscription, isOpen, onClose }) {
                   
                   <button 
                     onClick={copyToClipboard}
-                    className="w-full py-3 bg-zinc-900/40 hover:bg-zinc-800/50 text-zinc-100 rounded-full text-sm font-medium flex items-center justify-center gap-2 transition-colors duration-150 border border-zinc-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                    className="hp-btn-outline-ink w-full text-xs py-3"
                   >
-                    {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    {copied ? 'Copied to Clipboard' : 'Copy Cheatsheet'}
+                    {copied ? <CheckCircle2 className="w-4 h-4 text-[#024ad8]" /> : <Copy className="w-4 h-4" />}
+                    {copied ? 'Copied Strategy to Clipboard' : 'Copy Full Playbook Script'}
                   </button>
                 </div>
               )}
@@ -172,21 +172,21 @@ export default function NegotiateModal({ subscription, isOpen, onClose }) {
                 <div className="flex flex-col h-full">
                   
                   {discountSuccess && (
-                    <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-6 py-3 flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                      <p className="text-emerald-400 text-sm font-medium font-mono tabular-nums">
-                        Negotiation Successful! Estimated annual savings: ₹{Math.round(subscription.latest_amount * 0.3 * 12).toLocaleString('en-IN')}
+                    <div className="bg-[#c9e0fc] border-b border-[#024ad8]/20 px-6 py-2.5 flex items-center gap-2.5">
+                      <CheckCircle2 className="w-5 h-5 text-[#024ad8] shrink-0" />
+                      <p className="text-[#024ad8] text-xs font-bold">
+                        Discount Offered! Estimated annual savings: ₹{Math.round(subscription.latest_amount * 0.3 * 12).toLocaleString('en-IN')}
                       </p>
                     </div>
                   )}
 
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div className="flex-1 overflow-y-auto p-5 space-y-4">
                     {chatHistory.map((msg, idx) => (
                       <div key={idx} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                        <div className={`max-w-[80%] rounded-[12px] px-4 py-3 text-xs leading-relaxed ${
                           msg.sender === 'user' 
-                            ? 'bg-sky-400/10 text-sky-400 border border-sky-400/20 rounded-tr-sm' 
-                            : 'bg-zinc-900/60 text-zinc-100 rounded-tl-sm border border-zinc-800/70'
+                            ? 'bg-[#024ad8] text-white font-medium shadow-xs' 
+                            : 'bg-[#f7f7f7] border border-[#e8e8e8] text-[#1a1a1a] font-medium'
                         }`}>
                           {msg.text}
                         </div>
@@ -194,29 +194,29 @@ export default function NegotiateModal({ subscription, isOpen, onClose }) {
                     ))}
                     {sending && (
                       <div className="flex justify-start">
-                        <div className="bg-zinc-900/60 border border-zinc-800/70 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1">
-                          <span className="w-2 h-2 bg-zinc-500 rounded-full"></span>
-                          <span className="w-2 h-2 bg-zinc-500 rounded-full"></span>
-                          <span className="w-2 h-2 bg-zinc-500 rounded-full"></span>
+                        <div className="bg-[#f7f7f7] border border-[#e8e8e8] rounded-[12px] px-4 py-3 flex gap-1.5 items-center">
+                          <span className="w-1.5 h-1.5 bg-[#024ad8] rounded-full animate-bounce"></span>
+                          <span className="w-1.5 h-1.5 bg-[#024ad8] rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                          <span className="w-1.5 h-1.5 bg-[#024ad8] rounded-full animate-bounce [animation-delay:0.4s]"></span>
                         </div>
                       </div>
                     )}
                     <div ref={chatEndRef} />
                   </div>
 
-                  <form onSubmit={handleSendMessage} className="p-4 border-t border-zinc-800/70 flex gap-2">
+                  <form onSubmit={handleSendMessage} className="p-4 border-t border-[#e8e8e8] flex gap-2 bg-white">
                     <input
                       type="text"
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="Type your message to the agent..."
+                      placeholder="Type your retention counter-offer..."
                       disabled={sending || loading}
-                      className="flex-1 bg-[#09090b] border border-zinc-800/70 rounded-full px-4 py-2.5 text-sm text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 transition-colors disabled:opacity-50"
+                      className="flex-1 bg-[#f7f7f7] border border-[#e8e8e8] rounded-[4px] px-4 py-2.5 text-xs text-[#1a1a1a] focus:outline-none focus:border-[#024ad8] font-medium"
                     />
                     <button
                       type="submit"
                       disabled={sending || !inputValue.trim() || loading}
-                      className="bg-sky-400/10 text-sky-400 border border-sky-400/20 px-4 py-2.5 rounded-full disabled:opacity-50 hover:bg-sky-400/20 transition-colors duration-150 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                      className="hp-btn-primary text-xs px-4 py-2.5"
                     >
                       <Send className="w-4 h-4" />
                     </button>
@@ -231,3 +231,4 @@ export default function NegotiateModal({ subscription, isOpen, onClose }) {
     document.body
   );
 }
+
