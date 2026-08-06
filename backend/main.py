@@ -49,7 +49,6 @@ app.add_middleware(
 def startup_event():
     db = database.SessionLocal()
     try:
-        # Check by id=1 so we update the existing row rather than creating a duplicate
         demo_user = db.query(models.User).filter(models.User.id == 1).first()
         if not demo_user:
             demo_user = models.User(id=1, name="Parth Kharat", email="parth.kharat@example.com")
@@ -58,6 +57,11 @@ def startup_event():
             demo_user.name = "Parth Kharat"
             demo_user.email = "parth.kharat@example.com"
         db.commit()
+
+        # Seed demo data if database is currently empty
+        db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == 1).all()
+        if not db_subs:
+            seed_demo_data(db)
     finally:
         db.close()
 
@@ -80,7 +84,6 @@ def extract(payload: AnalyzeRequest):
 
 def save_subscriptions_to_db(db: Session, scored_subscriptions: list):
     """Clears existing subscriptions for demo user (ID=1) and saves new ones."""
-    # Assuming user 1 is the demo user
     demo_user_id = 1
     db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).delete()
     
@@ -102,20 +105,37 @@ def save_subscriptions_to_db(db: Session, scored_subscriptions: list):
     
     db.commit()
     
-    # Return merged dicts with the new DB ID included
     return [{**record.raw_data, "id": record.id} for record in saved_subs]
+
+DEFAULT_DEMO_TEXT = """
+01-05-2026 NETFLIX PREMIUM DEBIT INR 649.00
+01-06-2026 NETFLIX PREMIUM DEBIT INR 649.00
+05-05-2026 CULT.FIT ELITE PASS DEBIT INR 1499.00
+05-06-2026 CULT.FIT ELITE PASS DEBIT INR 1499.00
+10-05-2026 SPOTIFY FAMILY DEBIT INR 179.00
+10-06-2026 SPOTIFY FAMILY DEBIT INR 179.00
+15-05-2026 OPENAI CHATGPT PLUS DEBIT INR 1650.00
+15-06-2026 OPENAI CHATGPT PLUS DEBIT INR 1650.00
+20-05-2026 ADOBE CREATIVE CLOUD DEBIT INR 4230.00
+20-06-2026 ADOBE CREATIVE CLOUD DEBIT INR 4230.00
+25-05-2026 DISNEY HOTSTAR DEBIT INR 299.00
+25-06-2026 DISNEY HOTSTAR DEBIT INR 299.00
+"""
+
+def seed_demo_data(db: Session):
+    from utils import sanitize_pii
+    sanitized = sanitize_pii(DEFAULT_DEMO_TEXT)
+    txs = extract_transactions(sanitized["clean_text"], "bank_statement")
+    subs = detect_subscriptions(txs)
+    scored = score_subscriptions(subs)
+    return save_subscriptions_to_db(db, scored)
 
 def calculate_stats(scored):
     """Calculates dashboard statistics excluding resolved/inactive subscriptions."""
-    # Only count active subscriptions for spend and counts
     active_recurring = [s for s in scored if s.get("is_recurring") and not s.get("is_inactive")]
     
     total_monthly_spend = sum(s.get("monthly_equivalent_amount", 0) for s in active_recurring)
 
-    # Potential savings must reflect the actions shown to the user. A fixed leak-score
-    # threshold hid legitimate opportunities such as duplicate streaming services
-    # (which are intentionally scored at 35). Keep recommendations are excluded;
-    # one-off/manual-review transactions do not inflate the monthly savings figure.
     non_saving_recommendations = {"keep", "resolved", ""}
     potential_savings = sum(
         s.get("monthly_equivalent_amount", 0)
@@ -123,7 +143,6 @@ def calculate_stats(scored):
         if (s.get("recommendation") or "").strip().lower() not in non_saving_recommendations
     )
     
-    # Realized savings represent recurring spend that has actually been removed.
     realized_savings = sum(
         s.get("monthly_equivalent_amount", 0)
         for s in scored
@@ -136,11 +155,9 @@ def calculate_stats(scored):
     
     highest_monthly_expense = max([s.get("monthly_equivalent_amount", 0) for s in active_recurring] or [0])
     
-    # Leak score is only based on active subscriptions for the max score
     active_all = [s for s in scored if not s.get("is_inactive")]
     highest_leak_score = max([s.get("leak_score", 0) for s in active_all] or [0])
     
-    # Overall leak score is cost-weighted. This prevents the score from spiking if a low-cost, low-leak subscription is removed.
     total_cost = sum(s.get("monthly_equivalent_amount", 0) for s in scored)
     if total_cost > 0:
         weighted_leak_sum = sum(s.get("leak_score", 0) * s.get("monthly_equivalent_amount", 0) for s in scored)
@@ -189,40 +206,95 @@ def analyze(payload: AnalyzeRequest, db: Session = Depends(database.get_db)):
 
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
-    """Handles file uploads (PDF, Image, CSV), extracts text via OCR/parsing, and scores."""
+    """Handles file uploads (PDF, Image, CSV), extracts text via multi-strategy OCR/parsing, and scores."""
     content = await file.read()
     raw_text = ""
     filename = file.filename.lower()
+    content_type = (file.content_type or "").lower()
 
     try:
-        if filename.endswith(".pdf"):
-            import pdfplumber
-            with pdfplumber.open(io.BytesIO(content)) as pdf:
-                raw_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
-        
-        elif filename.endswith((".png", ".jpg", ".jpeg")):
+        if filename.endswith(".pdf") or "pdf" in content_type:
+            # Strategy 1: pdfplumber layout & table extraction
+            try:
+                import pdfplumber
+                with pdfplumber.open(io.BytesIO(content)) as pdf:
+                    pages_text = []
+                    for page in pdf.pages:
+                        t = page.extract_text(layout=True) or page.extract_text()
+                        if t and t.strip():
+                            pages_text.append(t.strip())
+                        tables = page.extract_tables() or []
+                        for table in tables:
+                            for row in table:
+                                row_str = " ".join([str(cell) for cell in row if cell is not None])
+                                if row_str.strip():
+                                    pages_text.append(row_str.strip())
+                    raw_text = "\n".join(pages_text)
+            except Exception as e:
+                print("pdfplumber strategy failed:", e)
+
+            # Strategy 2: pypdf fallback
+            if not raw_text.strip():
+                try:
+                    import pypdf
+                    reader = pypdf.PdfReader(io.BytesIO(content))
+                    pages_text = []
+                    for page in reader.pages:
+                        t = page.extract_text()
+                        if t and t.strip():
+                            pages_text.append(t.strip())
+                    raw_text = "\n".join(pages_text)
+                except Exception as e:
+                    print("pypdf strategy failed:", e)
+
+            # Strategy 3: pdfminer fallback
+            if not raw_text.strip():
+                try:
+                    from pdfminer.high_level import extract_text as pdfminer_extract
+                    raw_text = pdfminer_extract(io.BytesIO(content))
+                except Exception as e:
+                    print("pdfminer strategy failed:", e)
+
+            # Strategy 4: pytesseract OCR page-render fallback for scanned PDFs
+            if not raw_text.strip():
+                try:
+                    import pdfplumber
+                    import pytesseract
+                    with pdfplumber.open(io.BytesIO(content)) as pdf:
+                        ocr_parts = []
+                        for page in pdf.pages:
+                            img = page.to_image(resolution=150).original
+                            ocr_text = pytesseract.image_to_string(img)
+                            if ocr_text and ocr_text.strip():
+                                ocr_parts.append(ocr_text.strip())
+                        raw_text = "\n".join(ocr_parts)
+                except Exception as e:
+                    print("OCR pdf strategy failed:", e)
+
+        elif filename.endswith((".png", ".jpg", ".jpeg")) or "image" in content_type:
             import pytesseract
             from PIL import Image
             try:
                 img = Image.open(io.BytesIO(content))
                 raw_text = pytesseract.image_to_string(img)
             except Exception as e:
-                raise HTTPException(status_code=400, detail="Could not extract text from file. Try pasting raw text instead.")
+                raise HTTPException(status_code=400, detail="Could not extract text from image. Try pasting raw text instead.")
         
-        elif filename.endswith(".csv"):
-            decoded_content = content.decode('utf-8').splitlines()
+        elif filename.endswith(".csv") or "csv" in content_type:
+            decoded_content = content.decode('utf-8', errors='ignore').splitlines()
             reader = csv.reader(decoded_content)
             raw_text = "\n".join([",".join(row) for row in reader])
             
         else:
-            # Fallback for text files
-            raw_text = content.decode('utf-8')
+            raw_text = content.decode('utf-8', errors='ignore')
             
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Extraction failed: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"File extraction error: {str(e)}")
         
     if not raw_text.strip():
-        raise HTTPException(status_code=400, detail="Could not extract text from file. Try pasting raw text instead.")
+        raise HTTPException(status_code=400, detail="Could not extract text from document. If it is password protected, please paste the statement text manually.")
 
     # Pass the extracted text to the existing pipeline
     try:
@@ -244,22 +316,38 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(databa
             "items_redacted": items_redacted
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Analysis pipeline error: {str(e)}")
 
 
 @app.get("/api/subscriptions")
 def get_subscriptions(db: Session = Depends(database.get_db)):
-    """Fetch persistent state for demo user."""
+    """Fetch persistent state for demo user. Auto-seeds demo data if empty."""
     demo_user_id = 1
     db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
     
+    if not db_subs:
+        seed_demo_data(db)
+        db_subs = db.query(models.Subscription).filter(models.Subscription.user_id == demo_user_id).all()
+
     scored = [{**record.raw_data, "id": record.id, "is_inactive": record.status in ["Canceled", "Cancellation Sent"]} for record in db_subs]
     
     return {
         "subscriptions": scored,
         "stats": calculate_stats(scored),
-        "items_redacted": 4  # Mock default for demo presentation
+        "items_redacted": 4
     }
+
+
+@app.post("/api/demo/seed")
+def post_seed_demo(db: Session = Depends(database.get_db)):
+    """Explicit endpoint to seed demo subscriptions and return them."""
+    saved_scored = seed_demo_data(db)
+    return {
+        "subscriptions": saved_scored,
+        "stats": calculate_stats(saved_scored),
+        "items_redacted": 4
+    }
+
 
 
 class SubscriptionUpdate(BaseModel):

@@ -28,21 +28,112 @@ Return ONLY a valid JSON array. No markdown, no explanation, no preamble.
 If a line isn't a subscription transaction, skip it."""
 
 
+def fallback_extract_transactions(raw_text: str):
+    import re
+    lines = raw_text.splitlines()
+    transactions = []
+    
+    brand_categories = {
+        "netflix": ("Netflix", "Streaming", "Monthly"),
+        "spotify": ("Spotify", "Music", "Monthly"),
+        "cult.fit": ("Cult.fit", "Utility", "Monthly"),
+        "cultfit": ("Cult.fit", "Utility", "Monthly"),
+        "hotstar": ("Disney+ Hotstar", "Streaming", "Monthly"),
+        "disney": ("Disney+ Hotstar", "Streaming", "Monthly"),
+        "amazon": ("Prime Video", "Streaming", "Monthly"),
+        "prime": ("Prime Video", "Streaming", "Monthly"),
+        "chatgpt": ("ChatGPT Plus", "AI", "Monthly"),
+        "openai": ("ChatGPT Plus", "AI", "Monthly"),
+        "adobe": ("Adobe Creative Cloud", "Design", "Monthly"),
+        "github": ("GitHub Pro", "Developer Tools", "Monthly"),
+        "notion": ("Notion Pro", "Productivity", "Monthly"),
+        "dropbox": ("Dropbox", "Cloud Storage", "Annual"),
+        "google": ("Google One", "Cloud Storage", "Annual"),
+        "figma": ("Figma", "Design", "Monthly"),
+        "apple": ("iCloud+", "Cloud Storage", "Monthly"),
+        "youtube": ("YouTube Premium", "Streaming", "Monthly"),
+        "hulu": ("Hulu", "Streaming", "Monthly"),
+        "swiggy": None,
+        "uber": None,
+        "zomato": None
+    }
+    
+    date_regex = re.compile(r'(\d{4}-\d{2}-\d{2}|\d{2}[-/]\d{2}[-/]\d{4})')
+    amount_regex = re.compile(r'(?:INR|USD|\$|₹)?\s*(\d+(?:\.\d{1,2})?)', re.IGNORECASE)
+
+    for line in lines:
+        line_lower = line.lower().strip()
+        if not line_lower:
+            continue
+            
+        matched_brand = None
+        for key, info in brand_categories.items():
+            if key in line_lower:
+                if info is None:
+                    # Ignore blacklisted non-subscriptions
+                    matched_brand = "BLACKLIST"
+                    break
+                matched_brand = info
+                break
+                
+        if matched_brand and matched_brand != "BLACKLIST":
+            service_name, category, freq = matched_brand
+            # Extract date
+            date_match = date_regex.search(line)
+            date_str = "2026-06-01"
+            if date_match:
+                raw_date = date_match.group(1)
+                if "-" in raw_date or "/" in raw_date:
+                    parts = re.split(r'[-/]', raw_date)
+                    if len(parts[0]) == 4:
+                        date_str = f"{parts[0]}-{parts[1].zfill(2)}-{parts[2].zfill(2)}"
+                    elif len(parts[2]) == 4:
+                        date_str = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+
+            # Extract amount
+            amounts = amount_regex.findall(line)
+            amount_val = 199.0
+            if amounts:
+                # filter out date numbers
+                valid_amounts = [float(a) for a in amounts if float(a) > 10 and float(a) != 2026]
+                if valid_amounts:
+                    amount_val = valid_amounts[-1]
+
+            transactions.append({
+                "date": date_str,
+                "service_name": service_name,
+                "amount": amount_val,
+                "currency": "INR" if "$" not in line else "USD",
+                "category": category,
+                "billing_frequency": freq,
+                "next_billing_date": None
+            })
+            
+    return transactions
+
+
 def extract_transactions(raw_text: str, source_type: str = "bank_statement"):
-    resp = get_groq_client().chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"source_type: {source_type}\n\n{raw_text}"},
-        ],
-        temperature=0,
-    )
-    content = resp.choices[0].message.content.strip()
-    content = content.replace("```json", "").replace("```", "").strip()
     try:
-        return json.loads(content)
-    except json.JSONDecodeError:
-        # Fallback: pull out the JSON array if the model added stray text around it
-        start = content.find("[")
-        end = content.rfind("]") + 1
-        return json.loads(content[start:end])
+        resp = get_groq_client().chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"source_type: {source_type}\n\n{raw_text}"},
+            ],
+            temperature=0,
+        )
+        content = resp.choices[0].message.content.strip()
+        content = content.replace("```json", "").replace("```", "").strip()
+        try:
+            results = json.loads(content)
+        except json.JSONDecodeError:
+            start = content.find("[")
+            end = content.rfind("]") + 1
+            results = json.loads(content[start:end])
+            
+        if not results:
+            results = fallback_extract_transactions(raw_text)
+        return results
+    except Exception as e:
+        print("Groq transaction extraction failed, using fallback parser:", str(e))
+        return fallback_extract_transactions(raw_text)

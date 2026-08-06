@@ -24,6 +24,11 @@ export const getSubscriptions = async () => {
   return response.data;
 };
 
+export const loadDemoData = async () => {
+  const response = await axios.post(`${API_BASE_URL}/demo/seed`);
+  return response.data;
+};
+
 export const updateSubscription = async (subId, action) => {
   const response = await axios.patch(`${API_BASE_URL}/subscriptions/${subId}`, {
     action,
