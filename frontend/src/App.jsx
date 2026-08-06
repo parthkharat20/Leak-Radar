@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { analyzeText, getSubscriptions, updateSubscription } from './api';
+import { analyzeText, getSubscriptions, updateSubscription, loadDemoData } from './api';
 import LandingPage from './components/LandingPage';
 import UploadModal from './components/UploadModal';
 import Dashboard from './components/Dashboard';
@@ -19,7 +19,10 @@ function App() {
   useEffect(() => {
     const init = async () => {
       try {
-        await getSubscriptions();
+        const result = await getSubscriptions();
+        if (result && result.subscriptions && result.subscriptions.length > 0) {
+          setAnalysisResult(result);
+        }
       } catch (err) {
         console.error('Failed to reach API on init', err);
       } finally {
@@ -69,13 +72,12 @@ function App() {
     setError(null);
 
     try {
-      const result = await getSubscriptions();
-      if (result.subscriptions && result.subscriptions.length > 0) {
+      const result = await loadDemoData();
+      if (result && result.subscriptions && result.subscriptions.length > 0) {
         setAnalysisResult(result);
         setUploadModalOpen(false);
       } else {
-        setError('No demo data found. Upload a statement to seed your dashboard.');
-        setUploadModalOpen(true);
+        setError('Failed to seed demo data. Please try again.');
       }
     } catch (err) {
       console.error(err);
