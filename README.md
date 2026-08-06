@@ -42,6 +42,87 @@ Welcome to **LeakRadar**, the most intelligent and beautifully designed subscrip
 
 ---
 
+## 📐 System Architecture & Flow Diagram
+
+For detailed specifications, see the full [ARCHITECTURE.md](file:///Users/parthkharat/Documents/Innovex/leakradar/ARCHITECTURE.md).
+
+```mermaid
+graph TD
+    %% Styling
+    classDef client fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0369a1
+    classDef security fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#b45309
+    classDef core fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#6b21a8
+    classDef ai fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#15803d
+    classDef storage fill:#ffe4e6,stroke:#e11d48,stroke-width:2px,color:#9f1239
+    classDef external fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#334155
+
+    subgraph Client ["🖥️ Client Layer (Vite + React)"]
+        UI["LeakRadar Dashboard UI"]
+        Upload["File Dropzone / Text Ingestion"]
+        DemoBtn["Load Demo Mode"]
+        ActionModal["Cancellation & Negotiation Modals"]
+    end
+
+    subgraph Security ["🛡️ Security & Parsing Engine"]
+        Parser["Multi-Strategy Document Parser<br/>(pdfplumber / pypdf / pytesseract OCR)"]
+        PII["Local PII Redaction Engine<br/>(Scrub Cards, PAN, Phone, Email)"]
+    end
+
+    subgraph Backend ["⚡ Serverless Backend (FastAPI Python)"]
+        AnalyzeEndpoint["/api/analyze & /api/upload"]
+        Extractor["Transaction Extractor"]
+        Detector["Subscription Detector & Cycle Math"]
+        Scorer["Leak Scoring Engine (0-100)"]
+        DemoSeeder["Demo Auto-Seeder (/api/demo/seed)"]
+    end
+
+    subgraph AI ["🧠 AI Intelligence (Groq LLaMA 3.3)"]
+        GroqLLM["Groq LLaMA 3.3 Inference API"]
+        RegexFallback["Heuristic Regex Fallback Parser"]
+        EmailDrafter["AI Cancellation Email Drafter"]
+        NegotiationBot["AI Negotiation Assistant"]
+    end
+
+    subgraph DataAction ["🗄️ Persistence & Dispatch"]
+        SQLite[("SQLite Audit Vault<br/>(SQLAlchemy Models)")]
+        SMTP["SMTP Gmail Dispatch Engine"]
+    end
+
+    subgraph External ["🌐 External Services"]
+        VendorEmail["Vendor Customer Support"]
+    end
+
+    %% Flow Connections
+    Upload --> Parser
+    Parser --> PII
+    DemoBtn --> DemoSeeder
+    PII --> AnalyzeEndpoint
+    AnalyzeEndpoint --> Extractor
+    Extractor --> GroqLLM
+    GroqLLM -- Fallback on error --> RegexFallback
+    Extractor --> Detector
+    Detector --> Scorer
+    Scorer --> SQLite
+    DemoSeeder --> SQLite
+    SQLite --> UI
+
+    ActionModal --> EmailDrafter
+    EmailDrafter --> GroqLLM
+    ActionModal --> SMTP
+    SMTP --> VendorEmail
+    ActionModal --> NegotiationBot
+    NegotiationBot --> GroqLLM
+
+    class UI,Upload,DemoBtn,ActionModal client
+    class Parser,PII security
+    class AnalyzeEndpoint,Extractor,Detector,Scorer,DemoSeeder core
+    class GroqLLM,RegexFallback,EmailDrafter,NegotiationBot ai
+    class SQLite,SMTP storage
+    class VendorEmail external
+```
+
+---
+
 ## 🚀 Getting Started (Local Development)
 
 ### 1. Clone the Repository
